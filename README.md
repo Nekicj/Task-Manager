@@ -1,7 +1,7 @@
 # Task Manager
 
 A comprehensive Django-based task and project management system that helps teams track and collaborate on projects efficiently.
-
+![main](images/main.jpeg)
 ## Features
 
 - **Project Management**: Create and manage multiple projects with team members
