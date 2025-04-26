@@ -1,0 +1,291 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <style>
+    .restore-form {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .restore-option {
+      margin-bottom: 15px;
+    }
+    .backup-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .backup-table th, .backup-table td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    .backup-table th {
+      background-color: #f2f2f2;
+    }
+    .backup-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .backup-table tr:hover {
+      background-color: #f1f1f1;
+    }
+    .backup-table tr.selected {
+      background-color: #e8f4f8;
+    }
+    .progress-bar {
+      display: none;
+      width: 100%;
+      height: 20px;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      background-color: #79aec8;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .loading-indicator {
+      display: none;
+      margin-top: 10px;
+      font-style: italic;
+      color: #666;
+    }
+    .warning-box {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .warning-title {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .encrypted-indicator {
+      display: inline-block;
+      margin-left: 5px;
+      font-size: 16px;
+    }
+    .passphrase-section {
+      display: none;
+      background-color: #f7f7f9;
+      border: 1px solid #e1e1e8;
+      border-radius: 4px;
+      padding: 15px;
+      margin-top: 10px;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const restoreForm = document.getElementById('restore-form');
+      const progressBar = document.getElementById('progress-bar');
+      const progressBarInner = document.getElementById('progress-bar-inner');
+      const loadingIndicator = document.getElementById('loading-indicator');
+      
+      if (restoreForm) {
+        restoreForm.addEventListener('submit', function(e) {
+          // Show confirmation dialog
+          if (!confirm("{% trans 'WARNING: This will overwrite existing data. Are you sure you want to proceed?' %}")) {
+            e.preventDefault();
+            return false;
+          }
+          
+          progressBar.style.display = 'block';
+          loadingIndicator.style.display = 'block';
+          
+          // Simulate progress for visual feedback
+          let progress = 0;
+          const interval = setInterval(function() {
+            progress += 3;
+            if (progress > 95) {
+              clearInterval(interval);
+            }
+            progressBarInner.style.width = progress + '%';
+          }, 500);
+          
+          // Disable submit button to prevent multiple submissions
+          document.querySelector('input[type="submit"]').disabled = true;
+        });
+      }
+      
+      // Handle backup file selection from table
+      const backupRows = document.querySelectorAll('.backup-row');
+      const backupFileInput = document.getElementById('backup_file');
+      const passphraseSection = document.getElementById('passphrase-section');
+      
+      backupRows.forEach(function(row) {
+        row.addEventListener('click', function() {
+          // Reset selection
+          backupRows.forEach(r => r.classList.remove('selected'));
+          
+          // Mark this row as selected
+          this.classList.add('selected');
+          
+          // Set the value in the backup file input
+          const backupFilePath = this.getAttribute('data-path');
+          backupFileInput.value = backupFilePath;
+          
+          // Check if this is an encrypted backup
+          const fileName = this.getAttribute('data-filename');
+          if (fileName.endsWith('.gpg')) {
+            passphraseSection.style.display = 'block';
+          } else {
+            passphraseSection.style.display = 'none';
+          }
+        });
+      });
+      
+      // Check URL params to see if a file was pre-selected
+      const urlParams = new URLSearchParams(window.location.search);
+      const fileParam = urlParams.get('file');
+      if (fileParam) {
+        const matchingRow = document.querySelector(`.backup-row[data-filename="${fileParam}"]`);
+        if (matchingRow) {
+          matchingRow.click();
+        }
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+  &rsaquo; {% trans 'Restore System' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <h1>{% trans 'Restore System' %}</h1>
+  
+  {% if messages %}
+  <div class="messagelist">
+    {% for message in messages %}
+      <div{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|safe }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  
+  <div class="warning-box">
+    <div class="warning-title">{% trans '⚠️ Warning' %}</div>
+    <p>{% trans 'Restoring from a backup will overwrite your current database and/or media files. Make sure you have a recent backup of your current data before proceeding.' %}</p>
+    <p>{% trans 'The system may be unavailable during the restore process.' %}</p>
+  </div>
+  
+  {% if has_backups %}
+    <div class="restore-form">
+      <h2>{% trans 'Select Backup to Restore' %}</h2>
+      <form id="restore-form" method="post" action="{% url 'admin:perform_restore' %}">
+        {% csrf_token %}
+        
+        <input type="hidden" id="backup_file" name="backup_file" value="">
+        
+        <div class="restore-option">
+          <h3>{% trans 'Available Backups' %}</h3>
+          <table class="backup-table">
+            <thead>
+              <tr>
+                <th>{% trans 'Filename' %}</th>
+                <th>{% trans 'Size' %}</th>
+                <th>{% trans 'Date Modified' %}</th>
+                <th>{% trans 'Type' %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for backup in backups %}
+                <tr class="backup-row" data-path="{{ backup.path }}" data-filename="{{ backup.name }}">
+                  <td>
+                    {{ backup.name }}
+                    {% if backup.name|slice:"-4:" == ".gpg" %}
+                      <span class="encrypted-indicator" title="{% trans 'Encrypted backup' %}">🔒</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ backup.size }}</td>
+                  <td>{{ backup.modified|date:"Y-m-d H:i:s" }}</td>
+                  <td>
+                    {% if backup.name|slice:"-7:" == ".tar.gz" %}
+                      {% trans 'Compressed' %}
+                    {% elif backup.name|slice:"-4:" == ".tar" %}
+                      {% trans 'Uncompressed' %}
+                    {% elif backup.name|slice:"-4:" == ".gpg" %}
+                      {% trans 'Encrypted' %}
+                    {% else %}
+                      {% trans 'Unknown' %}
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        <div id="passphrase-section" class="passphrase-section">
+          <h3>{% trans 'Encrypted Backup Options' %}</h3>
+          <div class="restore-option">
+            <label for="passphrase">{% trans 'Passphrase:' %}</label>
+            <input type="password" name="passphrase" id="passphrase">
+            <p class="help">{% trans 'Enter the passphrase used to encrypt this backup.' %}</p>
+          </div>
+        </div>
+        
+        <h3>{% trans 'Restore Options' %}</h3>
+        
+        <div class="restore-option">
+          <input type="checkbox" name="skip_database" id="skip_database">
+          <label for="skip_database">{% trans 'Skip Database Restoration' %}</label>
+          <p class="help">{% trans 'Only restore media files, not database content.' %}</p>
+        </div>
+        
+        <div class="restore-option">
+          <input type="checkbox" name="skip_media" id="skip_media">
+          <label for="skip_media">{% trans 'Skip Media Files Restoration' %}</label>
+          <p class="help">{% trans 'Only restore database, not media files.' %}</p>
+        </div>
+        
+        <div class="restore-option">
+          <input type="checkbox" name="skip_fixtures" id="skip_fixtures">
+          <label for="skip_fixtures">{% trans 'Skip Fixtures Restoration' %}</label>
+          <p class="help">{% trans 'Do not load any fixtures included in the backup.' %}</p>
+        </div>
+        
+        <div class="restore-option">
+          <label for="media_strategy">{% trans 'Media Restore Strategy:' %}</label>
+          <select name="media_strategy" id="media_strategy">
+            <option value="replace" selected>{% trans 'Replace - Delete all existing files and restore from backup' %}</option>
+            <option value="merge">{% trans 'Merge - Keep existing files, add new ones from backup' %}</option>
+            <option value="keep-existing">{% trans 'Keep Existing - Only restore files that don\'t exist yet' %}</option>
+          </select>
+        </div>
+        
+        <div class="submit-row">
+          <input type="submit" value="{% trans 'Start Restoration' %}" class="default">
+        </div>
+        
+        <div id="progress-bar" class="progress-bar">
+          <div id="progress-bar-inner" class="progress-bar-inner"></div>
+        </div>
+        <div id="loading-indicator" class="loading-indicator">
+          {% trans 'Restoring from backup, please wait... This may take several minutes.' %}
+        </div>
+      </form>
+    </div>
+  {% else %}
+    <div class="restore-form">
+      <h2>{% trans 'No Backups Available' %}</h2>
+      <p>{% trans 'No backup files were found in the backups directory.' %}</p>
+      <p><a href="{% url 'admin:backup' %}" class="button">{% trans 'Create a Backup' %}</a></p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

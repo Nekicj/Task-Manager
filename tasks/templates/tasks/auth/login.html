@@ -1,0 +1,127 @@
+{% extends 'tasks/base.html' %}
+{% load static %}
+
+{% block title %}Login | Task Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7 col-sm-10">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-0"><i class="fas fa-sign-in-alt me-2"></i>Login</h4>
+            </div>
+            <div class="card-body p-4">
+                {% if form.errors %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Error:</strong> Your username or password is incorrect. Please try again.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+                
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                        <div class="error-feedback">
+                            {{ form.username.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                        <div class="error-feedback">
+                            {{ form.password.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="rememberMe" name="remember_me">
+                        <label class="form-check-label" for="rememberMe">Remember me</label>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </button>
+                    </div>
+                    
+                    <input type="hidden" name="next" value="{{ next }}">
+                </form>
+            </div>
+            <div class="card-footer bg-light p-3">
+                <div class="text-center">
+                    <p class="mb-1">
+                        <a href="{% url 'tasks:password_reset' %}" class="text-decoration-none">
+                            <i class="fas fa-key me-1"></i> Forgot password?
+                        </a>
+                    </p>
+                    <p class="mb-0">
+                        Don't have an account?
+                        <a href="{% url 'tasks:register' %}" class="fw-bold text-decoration-none">
+                            Register Now
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-focus the username field
+        document.getElementById('{{ form.username.id_for_label }}').focus();
+        
+        // Simple client-side validation
+        const loginForm = document.querySelector('form');
+        loginForm.addEventListener('submit', function(e) {
+            let hasError = false;
+            const username = document.getElementById('{{ form.username.id_for_label }}');
+            const password = document.getElementById('{{ form.password.id_for_label }}');
+            
+            // Remove existing error messages
+            document.querySelectorAll('.error-feedback').forEach(el => {
+                el.textContent = '';
+            });
+            
+            // Validate username
+            if (!username.value.trim()) {
+                const errorElement = username.nextElementSibling || 
+                    document.createElement('div');
+                errorElement.className = 'error-feedback';
+                errorElement.textContent = 'Username is required';
+                if (!username.nextElementSibling) {
+                    username.parentNode.appendChild(errorElement);
+                }
+                hasError = true;
+            }
+            
+            // Validate password
+            if (!password.value) {
+                const errorElement = password.nextElementSibling || 
+                    document.createElement('div');
+                errorElement.className = 'error-feedback';
+                errorElement.textContent = 'Password is required';
+                if (!password.nextElementSibling) {
+                    password.parentNode.appendChild(errorElement);
+                }
+                hasError = true;
+            }
+            
+            if (hasError) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+{% endblock %}
+

@@ -1,0 +1,343 @@
+/* Main Task Manager Styles */
+
+/* Variables for consistent colors */
+:root {
+    --todo-color: #f8d7da;
+    --todo-border: #f5c2c7;
+    --in-progress-color: #fff3cd;
+    --in-progress-border: #ffecb5;
+    --review-color: #cff4fc;
+    --review-border: #b6effb;
+    --completed-color: #d1e7dd;
+    --completed-border: #badbcc;
+    --archived-color: #e2e3e5;
+    --archived-border: #d3d6d8;
+    
+    --urgent-color: #dc3545;
+    --high-color: #fd7e14;
+    --medium-color: #ffc107;
+    --low-color: #0dcaf0;
+}
+
+/* General layout and utilities */
+.page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+/* Task status styling */
+.task-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    display: inline-block;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.task-status-todo {
+    background-color: var(--todo-color);
+    border: 1px solid var(--todo-border);
+}
+
+.task-status-in-progress {
+    background-color: var(--in-progress-color);
+    border: 1px solid var(--in-progress-border);
+}
+
+.task-status-review {
+    background-color: var(--review-color);
+    border: 1px solid var(--review-border);
+}
+
+.task-status-completed {
+    background-color: var(--completed-color);
+    border: 1px solid var(--completed-border);
+}
+
+.task-status-archived {
+    background-color: var(--archived-color);
+    border: 1px solid var(--archived-border);
+}
+
+/* Task priority styling */
+.priority-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.priority-urgent {
+    background-color: var(--urgent-color);
+    color: white;
+}
+
+.priority-high {
+    background-color: var(--high-color);
+    color: white;
+}
+
+.priority-medium {
+    background-color: var(--medium-color);
+    color: black;
+}
+
+.priority-low {
+    background-color: var(--low-color);
+    color: black;
+}
+
+/* Task cards */
+.task-card {
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    border-left: 4px solid #dee2e6;
+}
+
+.task-card.priority-urgent {
+    border-left-color: var(--urgent-color);
+}
+
+.task-card.priority-high {
+    border-left-color: var(--high-color);
+}
+
+.task-card.priority-medium {
+    border-left-color: var(--medium-color);
+}
+
+.task-card.priority-low {
+    border-left-color: var(--low-color);
+}
+
+/* Kanban board */
+.kanban-column {
+    min-height: 300px;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    padding: 1rem;
+}
+
+.kanban-card {
+    margin-bottom: 0.75rem;
+    cursor: grab;
+}
+
+.kanban-card:active {
+    cursor: grabbing;
+}
+
+.dropzone {
+    min-height: 100px;
+    border: 2px dashed #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.dropzone.highlight {
+    background-color: rgba(0, 123, 255, 0.1);
+    border-color: #007bff;
+}
+
+/* Form styling */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+.form-help-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.error-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #dc3545;
+}
+
+/* Custom switch for status toggle */
+.status-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.status-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.status-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.status-slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .status-slider {
+    background-color: #198754;
+}
+
+input:focus + .status-slider {
+    box-shadow: 0 0 1px #198754;
+}
+
+input:checked + .status-slider:before {
+    transform: translateX(26px);
+}
+
+/* Dashboard stats */
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .card-title {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+.stat-card .stat-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+    position: absolute;
+    right: 1.5rem;
+    top: 1.5rem;
+}
+
+/* Comments and attachments */
+.comment-container {
+    margin-bottom: 1.5rem;
+}
+
+.comment {
+    padding: 1rem;
+    border-left: 3px solid #dee2e6;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.comment-user {
+    font-weight: 600;
+}
+
+.comment-date {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.attachment-icon {
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.attachment-name {
+    flex-grow: 1;
+}
+
+.attachment-actions {
+    margin-left: 0.5rem;
+}
+
+/* Loading indicators */
+.loader {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 2s linear infinite;
+    margin: 1rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.form-loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .kanban-column {
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-card .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .stat-card .stat-icon {
+        font-size: 2rem;
+    }
+}
+

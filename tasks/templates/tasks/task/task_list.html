@@ -1,0 +1,849 @@
+{% extends 'tasks/base.html' %}
+{% load static %}
+
+{% block title %}Tasks | Task Manager{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1>Tasks</h1>
+    <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> New Task
+    </a>
+</div>
+
+<!-- Quick Filters -->
+<div class="row mb-3">
+    <div class="col-lg-12">
+        <div class="btn-group">
+            <a href="{% url 'tasks:task_list' %}" 
+               class="btn {% if not request.GET.filter %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                All Tasks <span class="badge bg-light text-dark">{{ tasks.count }}</span>
+            </a>
+            <a href="{% url 'tasks:task_list' %}?filter=my_tasks" 
+               class="btn {% if request.GET.filter == 'my_tasks' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                My Tasks <span class="badge bg-light text-dark">{{ my_tasks_count }}</span>
+            </a>
+            <a href="{% url 'tasks:task_list' %}?filter=created" 
+               class="btn {% if request.GET.filter == 'created' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Created by Me <span class="badge bg-light text-dark">{{ created_tasks_count }}</span>
+            </a>
+            <a href="{% url 'tasks:task_list' %}?filter=due_today" 
+               class="btn {% if request.GET.filter == 'due_today' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Due Today <span class="badge bg-light text-dark">{{ due_today_count }}</span>
+            </a>
+            <a href="{% url 'tasks:task_list' %}?filter=overdue" 
+               class="btn {% if request.GET.filter == 'overdue' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Overdue <span class="badge bg-light text-dark">{{ overdue_count }}</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Filters -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Advanced Filters</h5>
+        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+            <i class="fas fa-filter me-1"></i> Toggle Filters
+        </button>
+    </div>
+    <div class="collapse {% if request.GET.search or request.GET.status or request.GET.priority %}show{% endif %}" id="filterCollapse">
+        <div class="card-body">
+            <form id="task-filter-form" method="get" class="row g-3">
+                <!-- Hidden field to preserve quick filter if active -->
+                {% if request.GET.filter %}
+                <input type="hidden" name="filter" value="{{ request.GET.filter }}">
+                {% endif %}
+                
+                <!-- Search -->
+                <div class="col-md-6">
+                    <label for="search" class="form-label">Search</label>
+                    <div class="input-group">
+                        {{ filter_form.search }}
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Project -->
+                <div class="col-md-6">
+                    <label class="form-label">Project</label>
+                    <select name="project" class="form-select">
+                        <option value="">All Projects</option>
+                        {% for project in user_projects %}
+                        <option value="{{ project.id }}" {% if request.GET.project == project.id|stringformat:"i" %}selected{% endif %}>
+                            {{ project.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Status -->
+                <div class="col-md-6">
+                    <label class="form-label">Status</label>
+                    <div class="row">
+                        {% for value, label in filter_form.status.field.choices %}
+                        <div class="col-md-3 col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="status" 
+                                       value="{{ value }}" id="status_{{ value }}"
+                                       {% if value in request.GET.status|default:'' %}checked{% endif %}>
+                                <label class="form-check-label" for="status_{{ value }}">
+                                    {{ label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Priority -->
+                <div class="col-md-6">
+                    <label class="form-label">Priority</label>
+                    <div class="row">
+                        {% for value, label in filter_form.priority.field.choices %}
+                        <div class="col-md-3 col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="priority" 
+                                       value="{{ value }}" id="priority_{{ value }}"
+                                       {% if value in request.GET.priority|default:'' %}checked{% endif %}>
+                                <label class="form-check-label" for="priority_{{ value }}">
+                                    {{ label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Category -->
+                <div class="col-md-6">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for category in filter_form.category.field.queryset %}
+                        <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Assigned To -->
+                <div class="col-md-6">
+                    <label class="form-label">Assigned To</label>
+                    <select name="assigned_to" class="form-select">
+                        <option value="">Anyone</option>
+                        <option value="me" {% if request.GET.assigned_to == 'me' %}selected{% endif %}>Me</option>
+                        <option value="unassigned" {% if request.GET.assigned_to == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                    </select>
+                </div>
+                
+                <!-- Date Range -->
+                <div class="col-md-6">
+                    <label class="form-label">Deadline From</label>
+                    <input type="date" name="deadline_from" class="form-control" value="{{ request.GET.deadline_from }}">
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Deadline To</label>
+                    <input type="date" name="deadline_to" class="form-control" value="{{ request.GET.deadline_to }}">
+                </div>
+                
+                <!-- Buttons -->
+                <div class="col-12 d-flex justify-content-end">
+                    <a href="{% url 'tasks:task_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-undo me-1"></i> Reset
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Task List -->
+{% if tasks %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Tasks</h5>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary" id="viewToggleList">
+                <i class="fas fa-list"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary active" id="viewToggleCards">
+                <i class="fas fa-th-large"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Card View -->
+    <div class="card-body" id="cardView">
+        <div class="row">
+            {% for task in tasks %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card task-card h-100 priority-{{ task.priority }}">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2">
+                        <span class="task-status task-status-{{ task.status }}">
+                            {{ task.get_status_display }}
+                        </span>
+                        <span class="priority-badge priority-{{ task.priority }}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">{{ task.title }}</h5>
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-project-diagram me-1"></i> {{ task.project.title }}
+                        </p>
+                        
+                        <p class="card-text small text-truncate mb-3">
+                            {% if task.description %}
+                            {{ task.description|truncatechars:100 }}
+                            {% else %}
+                            <span class="text-muted">No description</span>
+                            {% endif %}
+                        </p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                {% if task.deadline %}
+                                <span class="small {% if task.is_overdue %}text-danger{% endif %}">
+                                    <i class="far fa-calendar-alt me-1"></i> 
+                                    {{ task.deadline|date:"M d, Y" }}
+                                    {% if task.is_overdue %}
+                                    <i class="fas fa-exclamation-circle ms-1"></i>
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% if task.category %}
+                            <span class="badge rounded-pill" style="background-color: {{ task.category.color }}">
+                                {{ task.category.name }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                {% if task.assigned_to %}
+                                <span class="small text-muted">
+                                    <i class="fas fa-user me-1"></i> {{ task.assigned_to.username }}
+                                </span>
+                                {% else %}
+                                <span class="small text-muted">
+                                    <i class="fas fa-user-slash me-1"></i> Unassigned
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="progress" style="width: 60px; height: 6px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ task.progress_percentage }}%;" 
+                                     aria-valuenow="{{ task.progress_percentage }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between py-2">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                        
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h6 class="dropdown-header">Change Status</h6></li>
+                                {% for status_value, status_label in task.get_status_choices %}
+                                <li>
+                                    <a class="dropdown-item task-status-change {% if task.status == status_value %}active{% endif %}" 
+                                       href="#" data-task-id="{{ task.id }}" data-status="{{ status_value }}">
+                                        {{ status_label }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{% url 'tasks:task_delete' task.pk %}">
+                                        <i class="fas fa-trash me-1"></i> Delete
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- List View (hidden by default) -->
+    <div class="table-responsive" id="listView" style="display: none;">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Project</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Deadline</th>
+                    <th>Assigned To</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td>
+                        <a href="{% url 'tasks:task_detail' task.pk %}" class="fw-bold text-decoration-none">
+                            {{ task.title }}
+
+{% extends 'tasks/base.html' %}
+{% load static %}
+
+{% block title %}Tasks | Task Manager{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1>Tasks</h1>
+    <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> New Task
+    </a>
+</div>
+
+<!-- Quick Filters -->
+<div class="row mb-3">
+    <div class="col-lg-12">
+        <div class="btn-group">
+                    <td>
+                        <a href="{% url 'tasks:task_detail' task.pk %}" class="fw-bold text-decoration-none">
+                            {{ task.title }}
+                        </a>
+                        {% if task.category %}
+                        <span class="badge rounded-pill" style="background-color: {{ task.category.color }}">
+                            {{ task.category.name }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ task.project.title }}</td>
+                    <td>
+                        <span class="task-status task-status-{{ task.status }}">
+                            {{ task.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="priority-badge priority-{{ task.priority }}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if task.deadline %}
+                        <span class="{% if task.is_overdue %}text-danger{% endif %}">
+                            {{ task.deadline|date:"M d, Y" }}
+                            {% if task.is_overdue %}
+                            <i class="fas fa-exclamation-circle ms-1"></i>
+                            {% endif %}
+                        </span>
+                        {% else %}
+                        <span class="text-muted">Not set</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if task.assigned_to %}
+                        {{ task.assigned_to.username }}
+                        {% else %}
+                        <span class="text-muted">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="my-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-tasks text-muted" style="font-size: 4rem;"></i>
+    <h3 class="mt-3">No Tasks Found</h3>
+    <p class="text-muted">Get started by creating your first task</p>
+    <a href="{% url 'tasks:task_create' %}" class="btn btn-primary mt-2">
+        <i class="fas fa-plus me-1"></i> Create New Task
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // View toggle (cards/list)
+        const cardView = document.getElementById('cardView');
+        const listView = document.getElementById('listView');
+        const viewToggleCards = document.getElementById('viewToggleCards');
+        const viewToggleList = document.getElementById('viewToggleList');
+        
+        viewToggleCards.addEventListener('click', function() {
+            cardView.style.display = 'block';
+            listView.style.display = 'none';
+            viewToggleCards.classList.add('active');
+            viewToggleList.classList.remove('active');
+            localStorage.setItem('taskViewPreference', 'cards');
+        });
+        
+        viewToggleList.addEventListener('click', function() {
+            cardView.style.display = 'none';
+            listView.style.display = 'block';
+            viewToggleList.classList.add('active');
+            viewToggleCards.classList.remove('active');
+            localStorage.setItem('taskViewPreference', 'list');
+        });
+        
+        // Load user preference if it exists
+        const viewPreference = localStorage.getItem('taskViewPreference');
+        if (viewPreference === 'list') {
+            viewToggleList.click();
+        }
+        
+        // Clear search button
+        document.getElementById('clearSearch').addEventListener('click', function() {
+            document.querySelector('[name="search"]').value = '';
+        });
+        
+        // Handle status changes
+        document.querySelectorAll('.task-status-change').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const taskId = this.getAttribute('data-task-id');
+                const newStatus = this.getAttribute('data-status');
+                
+                if (!taskId || !newStatus) return;
+                
+                fetch(`/tasks/${taskId}/update-status/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Update UI to reflect the change
+                        showToast('Success', data.message, 'success');
+                        
+                        // Refresh the page to show updated statuses
+                        window.location.reload();
+                    } else {
+                        showToast('Error', data.message || 'Error updating task status', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error', 'An error occurred. Please try again.', 'danger');
+                });
+            });
+        });
+        
+        // Toast notification function
+        function showToast(title, message, type = 'info') {
+            let toastContainer = document.querySelector('.toast-container');
+            
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                document.body.appendChild(toastContainer);
+            }
+            
+            const toastId = 'toast-' + Date.now();
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.id = toastId;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong>${title}:</strong> ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: 3000
+            });
+            
+            bsToast.show();
+        }
+    });
+</script>
+{% endblock %}
+            <a href="{% url 'tasks:task_list' %}?filter=my_tasks" 
+               class="btn {% if request.GET.filter == 'my_tasks' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                My Tasks <span class="badge bg-light text-dark">{{ my_tasks_count }}</span>
+            </a>
+            <a href="{% url 'tasks:task_list' %}?filter=created" 
+               class="btn {% if request.GET.filter == 'created' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Created by Me <span class="badge bg-light text-dark">{{ created_tasks_count }}</span>
+            </a>
+            <a href="{% url 'tasks:task_list' %}?filter=due_today" 
+               class="btn {% if request.GET.filter == 'due_today' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Due Today <span class="badge bg-light text-dark">{{ due_today_count }}</span>
+            </a>
+            <a href="{% url 'tasks:task_list' %}?filter=overdue" 
+               class="btn {% if request.GET.filter == 'overdue' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Overdue <span class="badge bg-light text-dark">{{ overdue_count }}</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Filters -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Advanced Filters</h5>
+        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+            <i class="fas fa-filter me-1"></i> Toggle Filters
+        </button>
+    </div>
+    <div class="collapse {% if request.GET.search or request.GET.status or request.GET.priority %}show{% endif %}" id="filterCollapse">
+        <div class="card-body">
+            <form id="task-filter-form" method="get" class="row g-3">
+                <!-- Hidden field to preserve quick filter if active -->
+                {% if request.GET.filter %}
+                <input type="hidden" name="filter" value="{{ request.GET.filter }}">
+                {% endif %}
+                
+                <!-- Search -->
+                <div class="col-md-6">
+                    <label for="search" class="form-label">Search</label>
+                    <div class="input-group">
+                        {{ filter_form.search }}
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Project -->
+                <div class="col-md-6">
+                    <label class="form-label">Project</label>
+                    <select name="project" class="form-select">
+                        <option value="">All Projects</option>
+                        {% for project in user_projects %}
+                        <option value="{{ project.id }}" {% if request.GET.project == project.id|stringformat:"i" %}selected{% endif %}>
+                            {{ project.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Status -->
+                <div class="col-md-6">
+                    <label class="form-label">Status</label>
+                    <div class="row">
+                        {% for value, label in filter_form.status.field.choices %}
+                        <div class="col-md-3 col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="status" 
+                                       value="{{ value }}" id="status_{{ value }}"
+                                       {% if value in request.GET.status|default:'' %}checked{% endif %}>
+                                <label class="form-check-label" for="status_{{ value }}">
+                                    {{ label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Priority -->
+                <div class="col-md-6">
+                    <label class="form-label">Priority</label>
+                    <div class="row">
+                        {% for value, label in filter_form.priority.field.choices %}
+                        <div class="col-md-3 col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="priority" 
+                                       value="{{ value }}" id="priority_{{ value }}"
+                                       {% if value in request.GET.priority|default:'' %}checked{% endif %}>
+                                <label class="form-check-label" for="priority_{{ value }}">
+                                    {{ label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Category -->
+                <div class="col-md-6">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for category in filter_form.category.field.queryset %}
+                        <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Assigned To -->
+                <div class="col-md-6">
+                    <label class="form-label">Assigned To</label>
+                    <select name="assigned_to" class="form-select">
+                        <option value="">Anyone</option>
+                        <option value="me" {% if request.GET.assigned_to == 'me' %}selected{% endif %}>Me</option>
+                        <option value="unassigned" {% if request.GET.assigned_to == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                    </select>
+                </div>
+                
+                <!-- Date Range -->
+                <div class="col-md-6">
+                    <label class="form-label">Deadline From</label>
+                    <input type="date" name="deadline_from" class="form-control" value="{{ request.GET.deadline_from }}">
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Deadline To</label>
+                    <input type="date" name="deadline_to" class="form-control" value="{{ request.GET.deadline_to }}">
+                </div>
+                
+                <!-- Buttons -->
+                <div class="col-12 d-flex justify-content-end">
+                    <a href="{% url 'tasks:task_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-undo me-1"></i> Reset
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Task List -->
+{% if tasks %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Tasks</h5>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary" id="viewToggleList">
+                <i class="fas fa-list"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary active" id="viewToggleCards">
+                <i class="fas fa-th-large"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Card View -->
+    <div class="card-body" id="cardView">
+        <div class="row">
+            {% for task in tasks %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card task-card h-100 priority-{{ task.priority }}">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2">
+                        <span class="task-status task-status-{{ task.status }}">
+                            {{ task.get_status_display }}
+                        </span>
+                        <span class="priority-badge priority-{{ task.priority }}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">{{ task.title }}</h5>
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-project-diagram me-1"></i> {{ task.project.title }}
+                        </p>
+                        
+                        <p class="card-text small text-truncate mb-3">
+                            {% if task.description %}
+                            {{ task.description|truncatechars:100 }}
+                            {% else %}
+                            <span class="text-muted">No description</span>
+                            {% endif %}
+                        </p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                {% if task.deadline %}
+                                <span class="small {% if task.is_overdue %}text-danger{% endif %}">
+                                    <i class="far fa-calendar-alt me-1"></i> 
+                                    {{ task.deadline|date:"M d, Y" }}
+                                    {% if task.is_overdue %}
+                                    <i class="fas fa-exclamation-circle ms-1"></i>
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% if task.category %}
+                            <span class="badge rounded-pill" style="background-color: {{ task.category.color }}">
+                                {{ task.category.name }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                {% if task.assigned_to %}
+                                <span class="small text-muted">
+                                    <i class="fas fa-user me-1"></i> {{ task.assigned_to.username }}
+                                </span>
+                                {% else %}
+                                <span class="small text-muted">
+                                    <i class="fas fa-user-slash me-1"></i> Unassigned
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="progress" style="width: 60px; height: 6px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ task.progress_percentage }}%;" 
+                                     aria-valuenow="{{ task.progress_percentage }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between py-2">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                        
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h6 class="dropdown-header">Change Status</h6></li>
+                                {% for status_value, status_label in task.get_status_choices %}
+                                <li>
+                                    <a class="dropdown-item task-status-change {% if task.status == status_value %}active{% endif %}" 
+                                       href="#" data-task-id="{{ task.id }}" data-status="{{ status_value }}">
+                                        {{ status_label }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{% url 'tasks:task_delete' task.pk %}">
+                                        <i class="fas fa-trash me-1"></i> Delete
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- List View (hidden by default) -->
+    <div class="table-responsive" id="listView" style="display: none;">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Project</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Deadline</th>
+                    <th>Assigned To</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td>
+                        <a href="{% url 'tasks:task_detail' task.pk %}" class="fw-bold text-decoration-none">
+                            {{ task.title }}
+                        
+

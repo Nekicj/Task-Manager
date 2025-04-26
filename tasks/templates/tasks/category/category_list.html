@@ -1,0 +1,232 @@
+{% extends 'tasks/base.html' %}
+{% load static %}
+
+{% block title %}Categories | Task Manager{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1>Categories</h1>
+    <a href="{% url 'tasks:category_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> New Category
+    </a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tags me-1"></i> Categories
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if category_hierarchy %}
+                <div class="row">
+                    {% for item in category_hierarchy %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 border-left-3" style="border-left: 4px solid {{ item.category.color }};">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge rounded-pill" style="background-color: {{ item.category.color }}">
+                                        {{ item.category.name }}
+                                    </span>
+                                    <span class="badge bg-light text-dark ms-2">
+                                        {{ item.task_count }} task{{ item.task_count|pluralize }}
+                                    </span>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary border-0" 
+                                            type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="{% url 'tasks:task_list' %}?category={{ item.category.id }}">
+                                            <i class="fas fa-tasks me-2"></i> View Tasks
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'tasks:category_update' item.category.pk %}">
+                                            <i class="fas fa-edit me-2"></i> Edit Category
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="{% url 'tasks:category_delete' item.category.pk %}">
+                                            <i class="fas fa-trash me-2"></i> Delete Category
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                {% if item.category.description %}
+                                <p class="card-text">{{ item.category.description }}</p>
+                                {% else %}
+                                <p class="card-text text-muted">No description</p>
+                                {% endif %}
+                                
+                                {% if item.children %}
+                                <h6 class="mt-3 mb-2">Sub-categories:</h6>
+                                <ul class="list-group">
+                                    {% for child in item.children %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="badge rounded-pill me-2" style="background-color: {{ child.color }}">
+                                                {{ child.name }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-light text-dark me-2">
+                                                {{ child.task_count }} task{{ child.task_count|pluralize }}
+                                            </span>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'tasks:task_list' %}?category={{ child.id }}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-tasks"></i>
+                                                </a>
+                                                <a href="{% url 'tasks:category_update' child.pk %}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'tasks:category_delete' child.pk %}" class="btn btn-outline-danger btn-sm">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="text-muted mt-3 mb-0">No sub-categories</p>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer text-muted">
+                                <small>
+                                    <i class="far fa-calendar me-1"></i> Created: {{ item.category.created_at|date:"M d, Y" }}
+                                    <i class="far fa-clock ms-3 me-1"></i> Updated: {{ item.category.updated_at|date:"M d, Y" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-tags text-muted" style="font-size: 4rem;"></i>
+                    <h3 class="mt-3">No Categories Found</h3>
+                    <p class="text-muted">Get started by creating your first category</p>
+                    <a href="{% url 'tasks:category_create' %}" class="btn btn-primary mt-2">
+                        <i class="fas fa-plus me-1"></i> Create New Category
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Usage Statistics -->
+{% if category_hierarchy %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-1"></i> Category Usage
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryPieChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-1"></i> Tasks by Category
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryBarChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if category_hierarchy %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prepare data for charts
+        const categoryNames = [];
+        const taskCounts = [];
+        const backgroundColors = [];
+        
+        {% for item in category_hierarchy %}
+        categoryNames.push("{{ item.category.name }}");
+        taskCounts.push({{ item.task_count }});
+        backgroundColors.push("{{ item.category.color }}");
+        {% endfor %}
+        
+        // Category Pie Chart
+        const pieCtx = document.getElementById('categoryPieChart').getContext('2d');
+        const pieChart = new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: categoryNames,
+                datasets: [{
+                    data: taskCounts,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.raw} tasks`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Category Bar Chart
+        const barCtx = document.getElementById('categoryBarChart').getContext('2d');
+        const barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: categoryNames,
+                datasets: [{
+                    label: 'Number of Tasks',
+                    data: taskCounts,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}
+

@@ -1,0 +1,389 @@
+{% extends 'tasks/base.html' %}
+{% load static %}
+
+{% block title %}{{ task.title }} | Task Manager{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1>{{ task.title }}</h1>
+        <nav aria-label="breadcrumb">
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Assigned To</h6>
+                        <p>
+                            {% if task.assigned_to %}
+                            <span>
+                                <i class="fas fa-user me-1"></i> {{ task.assigned_to.username }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted"><i class="fas fa-user-slash me-1"></i> Unassigned</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Created By</h6>
+                        <p>
+                            <i class="fas fa-user-edit me-1"></i> {{ task.created_by.username }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Deadline</h6>
+                        <p{% if task.is_overdue %} class="text-danger"{% endif %}>
+                            {% if task.deadline %}
+                            <i class="far fa-calendar-alt me-1"></i> {{ task.deadline|date:"M d, Y \a\t h:i A" }}
+                            {% if task.is_overdue %}
+                            <span class="badge bg-danger ms-1">Overdue</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted">No deadline set</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Time Estimates</h6>
+                        <p>
+                            <i class="far fa-clock me-1"></i> Estimated: {{ task.estimated_hours }} hours
+                            <br>
+                            <i class="fas fa-hourglass-half me-1"></i> Actual: {{ task.actual_hours }} hours
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Created</h6>
+                        <p>
+                            <i class="far fa-calendar-plus me-1"></i> {{ task.created_at|date:"M d, Y \a\t h:i A" }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Last Updated</h6>
+                        <p>
+                            <i class="far fa-calendar-check me-1"></i> {{ task.updated_at|date:"M d, Y \a\t h:i A" }}
+                        </p>
+                    </div>
+                    {% if task.completed_at %}
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Completed</h6>
+                        <p class="text-success">
+                            <i class="far fa-check-circle me-1"></i> {{ task.completed_at|date:"M d, Y \a\t h:i A" }}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Task Progress -->
+                <div class="mt-4">
+                    <h6 class="card-subtitle mb-2 text-muted">Task Progress</h6>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar {% if task.progress_percentage == 100 %}bg-success{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ task.progress_percentage }}%;" 
+                             aria-valuenow="{{ task.progress_percentage }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ task.progress_percentage }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="far fa-comments me-1"></i> Comments
+                    <span class="badge bg-primary ms-1">{{ comments|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Comment Form -->
+                <form id="comment-form" method="post" action="{% url 'tasks:task_add_comment' task.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ comment_form.text }}
+                        <div id="comment-error" class="error-feedback" style="display: none;"></div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="far fa-paper-plane me-1"></i> Add Comment
+                        </button>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <!-- Comments List -->
+                <div class="comment-container">
+                    {% if comments %}
+                        {% for comment in comments %}
+                        <div class="comment mb-3">
+                            <div class="comment-header d-flex justify-content-between">
+                                <div class="comment-user">
+                                    <i class="fas fa-user-circle me-1"></i> {{ comment.user.username }}
+                                </div>
+                                <div class="comment-date">
+                                    {{ comment.created_at|date:"M d, Y \a\t h:i A" }}
+                                </div>
+                            </div>
+                            <div class="comment-body mt-2">
+                                {{ comment.text|linebreaks }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <p>No comments yet. Be the first to comment!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Attachments Section -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-paperclip me-1"></i> Attachments
+                    <span class="badge bg-primary ms-1">{{ attachments|length }}</span>
+                </h5>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" 
+                        data-bs-target="#attachmentFormCollapse" aria-expanded="false">
+                    <i class="fas fa-plus me-1"></i> Add Attachment
+                </button>
+            </div>
+            
+            <!-- Attachment Form (collapsed by default) -->
+            <div class="collapse" id="attachmentFormCollapse">
+                <div class="card-body border-bottom">
+                    <form id="attachment-form" method="post" action="{% url 'tasks:task_add_attachment' task.pk %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ attachment_form.name.id_for_label }}" class="form-label">Name</label>
+                                {{ attachment_form.name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ attachment_form.file.id_for_label }}" class="form-label">File</label>
+                                {{ attachment_form.file }}
+                            </div>
+                            <div class="col-12 d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-cloud-upload-alt me-1"></i> Upload
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Attachments List -->
+            <div class="card-body">
+                {% if attachments %}
+                    <div class="row">
+                        {% for attachment in attachments %}
+                        <div class="col-md-6 mb-3">
+                            <div class="attachment-item">
+                                <div class="attachment-icon">
+                                    <i class="
+                                        {% if attachment.file.name|lower|endswith:'.pdf' %}fas fa-file-pdf
+                                        {% elif attachment.file.name|lower|endswith:'.doc' or attachment.file.name|lower|endswith:'.docx' %}fas fa-file-word
+                                        {% elif attachment.file.name|lower|endswith:'.xls' or attachment.file.name|lower|endswith:'.xlsx' %}fas fa-file-excel
+                                        {% elif attachment.file.name|lower|endswith:'.png' or attachment.file.name|lower|endswith:'.jpg' or attachment.file.name|lower|endswith:'.jpeg' or attachment.file.name|lower|endswith:'.gif' %}fas fa-file-image
+                                        {% else %}fas fa-file
+                                        {% endif %}
+                                    "></i>
+                                </div>
+                                <div class="attachment-name flex-grow-1">
+                                    {{ attachment.name }}
+                                </div>
+                                <div class="attachment-actions">
+                                    <a href="{{ attachment.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="small text-muted">
+                                Uploaded by {{ attachment.uploaded_by.username }} on {{ attachment.uploaded_at|date:"M d, Y" }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <p>No attachments yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column: Task Info & Related -->
+    <div class="col-lg-4">
+        <!-- Task Actions Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Task Actions</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'tasks:task_update' task.pk %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-edit me-2"></i> Edit Task
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" id="markCompleteBtn" 
+                       data-task-id="{{ task.id }}" data-action="complete">
+                        <i class="fas fa-check-circle me-2"></i> Mark as Completed
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" data-bs-toggle="modal" data-bs-target="#changeStatusModal">
+                        <i class="fas fa-exchange-alt me-2"></i> Change Status
+                    </a>
+                    <a href="{% url 'tasks:task_create' %}?project={{ task.project.id }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus me-2"></i> Create Related Task
+                    </a>
+                    <a href="{% url 'tasks:task_delete' task.pk %}" class="list-group-item list-group-item-action text-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Delete Task
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Related Tasks Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Related Tasks</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if related_tasks %}
+                <div class="list-group list-group-flush">
+                    {% for related in related_tasks %}
+                    <a href="{% url 'tasks:task_detail' related.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">{{ related.title }}</h6>
+                                <small class="text-muted">{{ related.project.title }}</small>
+                            </div>
+                            <div>
+                                <span class="task-status task-status-{{ related.status }} me-1">
+                                    {{ related.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <p>No related tasks found.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Status Modal -->
+<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeStatusModalLabel">Change Task Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group">
+                    {% for status_value, status_label in task.get_status_choices %}
+                    <button type="button" class="list-group-item list-group-item-action task-status-change 
+                            {% if task.status == status_value %}active{% endif %}" 
+                            data-task-id="{{ task.id }}" data-status="{{ status_value }}" data-bs-dismiss="modal">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>{{ status_label }}</span>
+                            <span class="task-status task-status-{{ status_value }}">
+                                {{ status_label }}
+                            </span>
+                        </div>
+                    </button>
+                    {% endfor %}
+                </div>
+            
+                <li class="breadcrumb-item active" aria-current="page">{{ task.title }}</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-primary">
+            <i class="fas fa-edit me-1"></i> Edit Task
+        </a>
+        <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="visually-hidden">Toggle Dropdown</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">Change Status</h6></li>
+            {% for status_value, status_label in task.get_status_choices %}
+            <li>
+                <a class="dropdown-item task-status-change {% if task.status == status_value %}active{% endif %}" 
+                   href="#" data-task-id="{{ task.id }}" data-status="{{ status_value }}">
+                    {{ status_label }}
+                </a>
+            </li>
+            {% endfor %}
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'tasks:task_delete' task.pk %}">
+                <i class="fas fa-trash-alt me-2"></i> Delete Task
+            </a></li>
+        </ul>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column: Task Details -->
+    <div class="col-lg-8">
+        <!-- Task Information Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Task Details</h5>
+                <div>
+                    <span class="task-status task-status-{{ task.status }} me-2">
+                        {{ task.get_status_display }}
+                    </span>
+                    <span class="priority-badge priority-{{ task.priority }}">
+                        {{ task.get_priority_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Description -->
+                <div class="mb-4">
+                    <h6 class="card-subtitle mb-2 text-muted">Description</h6>
+                    <div class="p-3 bg-light rounded">
+                        {% if task.description %}
+                        <p class="card-text">{{ task.description|linebreaks }}</p>
+                        {% else %}
+                        <p class="card-text text-muted">No description provided</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Task Information -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Project</h6>
+                        <p>
+                            <a href="{% url 'tasks:project_detail' task.project.pk %}" class="text-decoration-none">
+                                <i class="fas fa-project-diagram me-1"></i> {{ task.project.title }}
+                            </a>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Category</h6>
+                        <p>
+                            {% if task.category %}
+                            <span class="badge rounded-pill" style="background-color: {{ task.category.color }}">
+                                {{ task.category.name }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">No category</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-2 text-muted">Assigned To</h6>
+                        <p>
+

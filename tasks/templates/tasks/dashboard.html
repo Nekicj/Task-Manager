@@ -1,0 +1,328 @@
+{% extends 'tasks/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard | Task Manager{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1>Dashboard</h1>
+    <div>
+        <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> New Task
+        </a>
+        <a href="{% url 'tasks:project_create' %}" class="btn btn-outline-primary">
+            <i class="fas fa-folder-plus me-1"></i> New Project
+        </a>
+    </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card bg-primary bg-opacity-10">
+            <div class="card-title">Tasks Due Today</div>
+            <p class="stat-value text-primary">{{ due_today }}</p>
+            <i class="fas fa-calendar-day stat-icon text-primary"></i>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card bg-danger bg-opacity-10">
+            <div class="card-title">Overdue Tasks</div>
+            <p class="stat-value text-danger">{{ overdue_tasks }}</p>
+            <i class="fas fa-exclamation-circle stat-icon text-danger"></i>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card bg-success bg-opacity-10">
+            <div class="card-title">Completed Tasks</div>
+            <p class="stat-value text-success">{{ status_counts.completed|default:"0" }}</p>
+            <i class="fas fa-check-circle stat-icon text-success"></i>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card bg-info bg-opacity-10">
+            <div class="card-title">Total Projects</div>
+            <p class="stat-value text-info">{{ user_projects|length }}</p>
+            <i class="fas fa-project-diagram stat-icon text-info"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Tasks by Status</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Tasks by Priority</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="priorityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tasks Due Soon & Priority Tasks -->
+<div class="row mb-4">
+    <!-- Tasks Due Soon -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Tasks Due Soon</h5>
+                <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if upcoming_tasks %}
+                <div class="list-group list-group-flush">
+                    {% for task in upcoming_tasks %}
+                    <a href="{% url 'tasks:task_detail' task.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ task.title }}</h6>
+                                <small class="text-muted">{{ task.project.title }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="task-status task-status-{{ task.status }}">
+                                    {{ task.get_status_display }}
+                                </span>
+                                <div>
+                                    <small class="{% if task.is_overdue %}text-danger{% endif %}">
+                                        {% if task.is_overdue %}
+                                        <i class="fas fa-exclamation-circle"></i> Overdue
+                                        {% else %}
+                                        Due: {{ task.deadline|date:"M d, Y" }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center p-4">
+                    <p class="text-muted mb-0">No tasks due soon</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Priority Tasks -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Priority Tasks</h5>
+                <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if priority_tasks %}
+                <div class="list-group list-group-flush">
+                    {% for task in priority_tasks %}
+                    <a href="{% url 'tasks:task_detail' task.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ task.title }}</h6>
+                                <small class="text-muted">{{ task.project.title }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="priority-badge priority-{{ task.priority }}">
+                                    {{ task.get_priority_display }}
+                                </span>
+                                {% if task.deadline %}
+                                <div>
+                                    <small class="{% if task.is_overdue %}text-danger{% endif %}">
+                                        Due: {{ task.deadline|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center p-4">
+                    <p class="text-muted mb-0">No priority tasks</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Projects & Activity -->
+<div class="row">
+    <!-- Recent Projects -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Projects</h5>
+                <a href="{% url 'tasks:project_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_projects %}
+                <div class="list-group list-group-flush">
+                    {% for project in recent_projects %}
+                    <a href="{% url 'tasks:project_detail' project.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ project.title }}</h6>
+                                <small class="text-muted">
+                                    {{ project.task_count }} task{{ project.task_count|pluralize }}
+                                </small>
+                            </div>
+                            <div>
+                                <div class="progress" style="width: 100px; height: 8px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ project.completion_percentage }}%;" 
+                                         aria-valuenow="{{ project.completion_percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted">{{ project.completion_percentage }}% complete</small>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center p-4">
+                    <p class="text-muted mb-0">No recent projects</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Activity</h5>
+                <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_tasks %}
+                <div class="list-group list-group-flush">
+                    {% for task in recent_tasks %}
+                    <a href="{% url 'tasks:task_detail' task.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ task.title }}</h6>
+                                <small class="text-muted">{{ task.project.title }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="task-status task-status-{{ task.status }}">
+                                    {{ task.get_status_display }}
+                                </span>
+                                <div>
+                                    <small class="text-muted">
+                                        Updated: {{ task.updated_at|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center p-4">
+                    <p class="text-muted mb-0">No recent activity</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Task Status Chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        const statusChart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ status_data.labels|safe }},
+                datasets: [{
+                    data: {{ status_data.data|safe }},
+                    backgroundColor: [
+                        '#f8d7da', // To Do
+                        '#fff3cd', // In Progress
+                        '#cff4fc', // Review
+                        '#d1e7dd', // Completed
+                        '#e2e3e5'  // Archived
+                    ],
+                    borderColor: [
+                        '#f5c2c7',
+                        '#ffecb5',
+                        '#b6effb',
+                        '#badbcc',
+                        '#d3d6d8'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+        
+        // Task Priority Chart
+        const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+        const priorityChart = new Chart(priorityCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ priority_data.labels|safe }},
+                datasets: [{
+                    label: 'Tasks by Priority',
+                    data: {{ priority_data.data|safe }},
+                    backgroundColor: [
+                        '#0dcaf0', // Low
+                        '#ffc107', // Medium
+                        '#fd7e14', // High
+                        '#dc3545'  // Urgent
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+

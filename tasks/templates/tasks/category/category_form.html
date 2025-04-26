@@ -1,0 +1,184 @@
+{% extends 'tasks/base.html' %}
+{% load static %}
+
+{% block title %}
+{% if form.instance.pk %}Edit Category: {{ form.instance.name }}{% else %}Create New Category{% endif %} | Task Manager
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1>
+            {% if form.instance.pk %}
+            Edit Category: {{ form.instance.name }}
+            {% else %}
+            Create New Category
+            {% endif %}
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'tasks:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'tasks:category_list' %}">Categories</a></li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    {% if form.instance.pk %}Edit: {{ form.instance.name }}{% else %}New Category{% endif %}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tag me-1"></i>
+                    {% if form.instance.pk %}Edit Category{% else %}New Category{% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Name*</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="error-feedback">
+                            {% for error in form.name.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if form.name.help_text %}
+                        <div class="form-text">{{ form.name.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="error-feedback">
+                            {% for error in form.description.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if form.description.help_text %}
+                        <div class="form-text">{{ form.description.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.color.id_for_label }}" class="form-label">Color</label>
+                            <div class="input-group">
+                                {{ form.color }}
+                                <span class="input-group-text">
+                                    <span id="color-preview" class="color-preview"
+                                          style="display: inline-block; width: 20px; height: 20px; border-radius: 50%; 
+                                                 background-color: {{ form.instance.color|default:'#3498db' }};">
+                                    </span>
+                                </span>
+                            </div>
+                            {% if form.color.errors %}
+                            <div class="error-feedback">
+                                {% for error in form.color.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% if form.color.help_text %}
+                            <div class="form-text">{{ form.color.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="{{ form.parent.id_for_label }}" class="form-label">Parent Category</label>
+                            {{ form.parent }}
+                            {% if form.parent.errors %}
+                            <div class="error-feedback">
+                                {% for error in form.parent.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% if form.parent.help_text %}
+                            <div class="form-text">{{ form.parent.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <a href="{% url 'tasks:category_list' %}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-times me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            {% if form.instance.pk %}Save Changes{% else %}Create Category{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Color picker preview
+        const colorInput = document.getElementById('{{ form.color.id_for_label }}');
+        const colorPreview = document.getElementById('color-preview');
+        
+        // Update color preview on init
+        colorPreview.style.backgroundColor = colorInput.value;
+        
+        // Update color preview on change
+        colorInput.addEventListener('input', function() {
+            colorPreview.style.backgroundColor = this.value;
+        });
+        
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            let hasError = false;
+            
+            // Check if name is empty
+            const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+            if (!nameInput.value.trim()) {
+                e.preventDefault();
+                hasError = true;
+                
+                // Add error message if not already present
+                let errorElement = nameInput.nextElementSibling;
+                if (!errorElement || !errorElement.classList.contains('error-feedback')) {
+                    errorElement = document.createElement('div');
+                    errorElement.className = 'error-feedback';
+                    errorElement.textContent = 'Category name is required';
+                    nameInput.parentNode.insertBefore(errorElement, nameInput.nextSibling);
+                }
+            }
+            
+            if (hasError) {
+                // Scroll to the first error
+                window.scrollTo({
+                    top: form.getBoundingClientRect().top + window.pageYOffset - 20,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}
+

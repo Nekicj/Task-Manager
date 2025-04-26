@@ -1,0 +1,554 @@
+{% extends 'tasks/base.html' %}
+{% load static %}
+
+{% block title %}{{ project.title }} | Task Manager{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1>{{ project.title }}</h1>
+        <nav aria-label="breadcrumb">
+                                    <small class="text-muted">
+                                        {% if task.deadline %}
+                                        <i class="far fa-calendar-alt me-1"></i> {{ task.deadline|date:"M d" }}
+                                        {% endif %}
+                                    </small>
+                                    <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted p-3">
+                            <p class="mb-0">No tasks</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Review Column -->
+            <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                <div class="kanban-column">
+                    <h6 class="mb-3 d-flex justify-content-between">
+                        <span><i class="fas fa-clipboard-check me-2"></i> Review</span>
+                        <span class="badge bg-info">{{ review_tasks.count }}</span>
+                    </h6>
+                    <div class="dropzone" id="review-zone" data-status="review">
+                        {% for task in review_tasks %}
+                        <div class="card kanban-card task-card priority-{{ task.priority }}" data-task-id="{{ task.id }}">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">{{ task.title }}</h6>
+                                    <span class="priority-badge priority-{{ task.priority }}">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                </div>
+                                <p class="card-text small text-truncate">
+                                    {% if task.description %}
+                                    {{ task.description|truncatechars:60 }}
+                                    {% else %}
+                                    <span class="text-muted">No description</span>
+                                    {% endif %}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        {% if task.deadline %}
+                                        <i class="far fa-calendar-alt me-1"></i> {{ task.deadline|date:"M d" }}
+                                        {% endif %}
+                                    </small>
+                                    <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted p-3">
+                            <p class="mb-0">No tasks</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Completed Column -->
+            <div class="col-lg-3 col-md-6">
+                <div class="kanban-column">
+                    <h6 class="mb-3 d-flex justify-content-between">
+                        <span><i class="fas fa-check me-2"></i> Completed</span>
+                        <span class="badge bg-success">{{ completed_tasks.count }}</span>
+                    </h6>
+                    <div class="dropzone" id="completed-zone" data-status="completed">
+                        {% for task in completed_tasks %}
+                        <div class="card kanban-card task-card priority-{{ task.priority }}" data-task-id="{{ task.id }}">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">{{ task.title }}</h6>
+                                    <span class="priority-badge priority-{{ task.priority }}">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                </div>
+                                <p class="card-text small text-truncate">
+                                    {% if task.description %}
+                                    {{ task.description|truncatechars:60 }}
+                                    {% else %}
+                                    <span class="text-muted">No description</span>
+                                    {% endif %}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        {% if task.completed_at %}
+                                        <i class="far fa-check-circle me-1"></i> {{ task.completed_at|date:"M d" }}
+                                        {% endif %}
+                                    </small>
+                                    <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted p-3">
+                            <p class="mb-0">No tasks</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Member Modal -->
+<div class="modal fade" id="addMemberModal" tabindex="-1" aria-labelledby="addMemberModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMemberModalLabel">Add Project Members</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addMemberForm" method="post" action="{% url 'tasks:project_update' project.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="members" class="form-label">Select Users</label>
+                        <select class="form-select" id="members" name="members" multiple>
+                            {% for user in available_users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Hold Ctrl (Cmd on Mac) to select multiple users
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-1"></i> Add Members
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Kanban drag and drop
+        const dropzones = document.querySelectorAll('.dropzone');
+        
+        dropzones.forEach(function(dropzone) {
+            new Sortable(dropzone, {
+                group: 'kanban',
+                animation: 150,
+                ghostClass: 'bg-light',
+                chosenClass: 'bg-info',
+                onEnd: function(evt) {
+                    const taskId = evt.item.getAttribute('data-task-id');
+                    const newStatus = evt.to.getAttribute('data-status');
+                    
+                    // Send AJAX request to update task status
+                    if (taskId && newStatus) {
+                        updateTaskStatus(taskId, newStatus);
+                    }
+                }
+            });
+        });
+        
+        // Handle removing members
+        document.querySelectorAll('.remove-member').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const memberId = this.getAttribute('data-member-id');
+                const memberName = this.getAttribute('data-member-name');
+                
+                if (confirm(`Are you sure you want to remove ${memberName} from this project?`)) {
+                    // Create form and submit
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `{% url 'tasks:project_update' project.pk %}`;
+                    
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    
+                    const actionInput = document.createElement('input');
+                    actionInput.type = 'hidden';
+                    actionInput.name = 'remove_member';
+                    actionInput.value = memberId;
+                    
+                    form.appendChild(csrfInput);
+                    form.appendChild(actionInput);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+        
+        // Function to update task status via AJAX
+        function updateTaskStatus(taskId, newStatus) {
+            // Show loading indicator
+            const taskCard = document.querySelector(`.kanban-card[data-task-id="${taskId}"]`);
+            taskCard.classList.add('opacity-50');
+            
+            fetch(`/tasks/${taskId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Success - leave card where it was dropped
+                    taskCard.classList.remove('opacity-50');
+                    
+                    // Update badges count
+                    updateColumnCounts();
+                    
+                    // Show notification
+                    showToast('Success', data.message, 'success');
+                } else {
+                    // Error - revert the drag
+                    alert('Error updating task status. Please try again.');
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+                window.location.reload();
+            });
+        }
+        
+        // Update column counts after drag-drop
+        function updateColumnCounts() {
+            const columns = [
+                { id: 'todo-zone', badge: document.querySelector('span.badge:has(+ #todo-zone)') },
+                { id: 'in-progress-zone', badge: document.querySelector('span.badge:has(+ #in-progress-zone)') },
+                { id: 'review-zone', badge: document.querySelector('span.badge:has(+ #review-zone)') },
+                { id: 'completed-zone', badge: document.querySelector('span.badge:has(+ #completed-zone)') }
+            ];
+            
+            columns.forEach(column => {
+                const taskCount = document.querySelectorAll(`#${column.id} .kanban-card`).length;
+                if (column.badge) {
+                    column.badge.textContent = taskCount;
+                }
+            });
+        }
+        
+        // Toast notification
+        function showToast(title, message, type = 'info') {
+            // Check if we already have a toast container
+            let toastContainer = document.querySelector('.toast-container');
+            
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Create toast
+            const toastId = 'toast-' + Date.now();
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center border-0 bg-${type}`;
+            toast.id = toastId;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body text-white">
+                        <strong>${title}</strong>: ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Initialize and show the toast
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: 5000
+            });
+            bsToast.show();
+        }
+    });
+</script>
+{% endblock %}
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'tasks:task_create' %}?project={{ project.pk }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Add Task
+        </a>
+        <a href="{% url 'tasks:project_update' project.pk %}" class="btn btn-outline-primary">
+            <i class="fas fa-edit me-1"></i> Edit Project
+        </a>
+        <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="visually-hidden">Toggle Dropdown</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            {% if project.is_archived %}
+            <li><a class="dropdown-item" href="{% url 'tasks:project_update' project.pk %}?unarchive=true">
+                <i class="fas fa-box-open me-2"></i> Unarchive Project
+            </a></li>
+            {% else %}
+            <li><a class="dropdown-item" href="{% url 'tasks:project_update' project.pk %}?archive=true">
+                <i class="fas fa-archive me-2"></i> Archive Project
+            </a></li>
+            {% endif %}
+            <li><a class="dropdown-item text-danger" href="{% url 'tasks:project_delete' project.pk %}">
+                <i class="fas fa-trash-alt me-2"></i> Delete Project
+            </a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Project Info -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Project Details</h5>
+                
+                {% if project.description %}
+                <p class="card-text">{{ project.description }}</p>
+                {% else %}
+                <p class="card-text text-muted">No description provided</p>
+                {% endif %}
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted">Status:</span>
+                                <span class="badge {% if project.is_archived %}bg-secondary{% else %}bg-primary{% endif %}">
+                                    {% if project.is_archived %}Archived{% else %}Active{% endif %}
+                                </span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted">Owner:</span>
+                                <span>{{ project.owner.username }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted">Start Date:</span>
+                                <span>{{ project.start_date|date:"M d, Y" }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted">Due Date:</span>
+                                <span {% if project.is_overdue %}class="text-danger"{% endif %}>
+                                    {% if project.end_date %}
+                                    {{ project.end_date|date:"M d, Y" }}
+                                    {% if project.is_overdue %}<i class="fas fa-exclamation-circle ms-1"></i>{% endif %}
+                                    {% else %}
+                                    Not set
+                                    {% endif %}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted">Total Tasks:</span>
+                                <span>{{ project.task_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted">Completed Tasks:</span>
+                                <span>{{ project.completed_task_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted">Created:</span>
+                                <span>{{ project.created_at|date:"M d, Y" }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted">Last Updated:</span>
+                                <span>{{ project.updated_at|date:"M d, Y" }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Progress</h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="progress flex-grow-1 me-3" style="height: 20px;">
+                        <div class="progress-bar {% if project.completion_percentage == 100 %}bg-success{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ project.completion_percentage }}%;" 
+                             aria-valuenow="{{ project.completion_percentage }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ project.completion_percentage }}%
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <span class="badge bg-success">{{ project.completed_task_count }} Completed</span>
+                    <span class="badge bg-warning text-dark">{{ todo_tasks.count|add:in_progress_tasks.count|add:review_tasks.count }} In Progress</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Project Members</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                    <i class="fas fa-user-plus"></i>
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ project.owner.username }}</strong>
+                            <span class="badge bg-primary ms-2">Owner</span>
+                        </div>
+                    </li>
+                    
+                    {% for member_stat in member_stats %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span>{{ member_stat.user.username }}</span>
+                        </div>
+                        <div>
+                            <span class="badge bg-light text-dark">{{ member_stat.task_count }} tasks</span>
+                            <span class="badge bg-success">{{ member_stat.completed }} completed</span>
+                            <button class="btn btn-sm btn-outline-danger border-0 remove-member" 
+                                    data-member-id="{{ member_stat.user.id }}" 
+                                    data-member-name="{{ member_stat.user.username }}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted">
+                        No additional members
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kanban Board -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Tasks Kanban Board</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- To Do Column -->
+            <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                <div class="kanban-column">
+                    <h6 class="mb-3 d-flex justify-content-between">
+                        <span><i class="fas fa-list me-2"></i> To Do</span>
+                        <span class="badge bg-secondary">{{ todo_tasks.count }}</span>
+                    </h6>
+                    <div class="dropzone" id="todo-zone" data-status="todo">
+                        {% for task in todo_tasks %}
+                        <div class="card kanban-card task-card priority-{{ task.priority }}" data-task-id="{{ task.id }}">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">{{ task.title }}</h6>
+                                    <span class="priority-badge priority-{{ task.priority }}">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                </div>
+                                <p class="card-text small text-truncate">
+                                    {% if task.description %}
+                                    {{ task.description|truncatechars:60 }}
+                                    {% else %}
+                                    <span class="text-muted">No description</span>
+                                    {% endif %}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        {% if task.deadline %}
+                                        <i class="far fa-calendar-alt me-1"></i> {{ task.deadline|date:"M d" }}
+                                        {% endif %}
+                                    </small>
+                                    <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted p-3">
+                            <p class="mb-0">No tasks</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- In Progress Column -->
+            <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                <div class="kanban-column">
+                    <h6 class="mb-3 d-flex justify-content-between">
+                        <span><i class="fas fa-spinner me-2"></i> In Progress</span>
+                        <span class="badge bg-warning text-dark">{{ in_progress_tasks.count }}</span>
+                    </h6>
+                    <div class="dropzone" id="in-progress-zone" data-status="in_progress">
+                        {% for task in in_progress_tasks %}
+                        <div class="card kanban-card task-card priority-{{ task.priority }}" data-task-id="{{ task.id }}">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">{{ task.title }}</h6>
+                                    <span class="priority-badge priority-{{ task.priority }}">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                </div>
+                                <p class="card-text small text-truncate">
+                                    {% if task.description %}
+                                    {{ task.description|truncatechars:60 }}
+                                    {% else %}
+                                    <span class="text-muted">No description</span>
+                                    {% endif %}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        {% if task.deadline %}
+                                        <i class="far fa-calendar-alt me-1"></i> {{ task.deadline|date:"M d" }}
+                                        {% endif %}
+                                    </small>
+                                    <a href="{% url 'tasks:task_detail' task.pk %}"
+

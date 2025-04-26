@@ -1,0 +1,219 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <style>
+    .backup-form {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .backup-option {
+      margin-bottom: 15px;
+    }
+    .backup-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .backup-table th, .backup-table td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    .backup-table th {
+      background-color: #f2f2f2;
+    }
+    .backup-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .backup-table tr:hover {
+      background-color: #f1f1f1;
+    }
+    .progress-bar {
+      display: none;
+      width: 100%;
+      height: 20px;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      background-color: #79aec8;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .loading-indicator {
+      display: none;
+      margin-top: 10px;
+      font-style: italic;
+      color: #666;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const backupForm = document.getElementById('backup-form');
+      const progressBar = document.getElementById('progress-bar');
+      const progressBarInner = document.getElementById('progress-bar-inner');
+      const loadingIndicator = document.getElementById('loading-indicator');
+      
+      if (backupForm) {
+        backupForm.addEventListener('submit', function() {
+          progressBar.style.display = 'block';
+          loadingIndicator.style.display = 'block';
+          
+          // Simulate progress for visual feedback
+          let progress = 0;
+          const interval = setInterval(function() {
+            progress += 5;
+            if (progress > 90) {
+              clearInterval(interval);
+            }
+            progressBarInner.style.width = progress + '%';
+          }, 500);
+          
+          // Disable submit button to prevent multiple submissions
+          document.querySelector('input[type="submit"]').disabled = true;
+        });
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+  &rsaquo; {% trans 'Backup System' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <h1>{% trans 'Backup System' %}</h1>
+  
+  {% if messages %}
+  <div class="messagelist">
+    {% for message in messages %}
+      <div{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|safe }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  
+  <div class="backup-form">
+    <h2>{% trans 'Create New Backup' %}</h2>
+    <form id="backup-form" method="post" action="{% url 'admin:perform_backup' %}">
+      {% csrf_token %}
+      
+      <div class="backup-option">
+        <label for="filename">{% trans 'Backup Filename' %} (optional):</label>
+        <input type="text" name="filename" id="filename" placeholder="backup_{{ now|date:'Ymd_His' }}">
+        <p class="help">{% trans 'Leave empty to generate an automatic name based on the current date and time.' %}</p>
+      </div>
+      
+      <div class="backup-option">
+        <input type="checkbox" name="compress" id="compress" checked>
+        <label for="compress">{% trans 'Compress Backup' %}</label>
+        
+        <select name="compression_level" id="compression_level">
+          <option value="1">{% trans 'Level 1 (Fastest)' %}</option>
+          <option value="3">{% trans 'Level 3 (Fast)' %}</option>
+          <option value="6" selected>{% trans 'Level 6 (Default)' %}</option>
+          <option value="9">{% trans 'Level 9 (Best Compression)' %}</option>
+        </select>
+      </div>
+      
+      <div class="backup-option">
+        <input type="checkbox" name="skip_database" id="skip_database">
+        <label for="skip_database">{% trans 'Skip Database Backup' %}</label>
+      </div>
+      
+      <div class="backup-option">
+        <input type="checkbox" name="skip_media" id="skip_media">
+        <label for="skip_media">{% trans 'Skip Media Files Backup' %}</label>
+      </div>
+      
+      <div class="backup-option">
+        <input type="checkbox" name="include_fixtures" id="include_fixtures">
+        <label for="include_fixtures">{% trans 'Include Fixtures' %}</label>
+      </div>
+      
+      <div class="backup-option">
+        <input type="checkbox" name="encrypt" id="encrypt">
+        <label for="encrypt">{% trans 'Encrypt Backup' %}</label>
+        <p class="help">{% trans 'Requires GPG to be installed on the server.' %}</p>
+      </div>
+      
+      <div class="backup-option" id="encrypt-key-option" style="display: none;">
+        <label for="encrypt_key">{% trans 'GPG Key or Email' %} (optional):</label>
+        <input type="text" name="encrypt_key" id="encrypt_key">
+        <p class="help">{% trans 'Leave empty for symmetric encryption (password-based).' %}</p>
+      </div>
+      
+      <div>
+        <input type="submit" value="{% trans 'Create Backup' %}" class="default">
+      </div>
+      
+      <div id="progress-bar" class="progress-bar">
+        <div id="progress-bar-inner" class="progress-bar-inner"></div>
+      </div>
+      <div id="loading-indicator" class="loading-indicator">
+        {% trans 'Creating backup, please wait...' %}
+      </div>
+    </form>
+  </div>
+  
+  <h2>{% trans 'Existing Backups' %}</h2>
+  {% if has_backups %}
+    <table class="backup-table">
+      <thead>
+        <tr>
+          <th>{% trans 'Filename' %}</th>
+          <th>{% trans 'Size' %}</th>
+          <th>{% trans 'Date Modified' %}</th>
+          <th>{% trans 'Actions' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for backup in backups %}
+          <tr>
+            <td>{{ backup.name }}</td>
+            <td>{{ backup.size }}</td>
+            <td>{{ backup.modified|date:"Y-m-d H:i:s" }}</td>
+            <td>
+              <a href="{% url 'admin:restore' %}?file={{ backup.name }}" class="button">{% trans 'Restore' %}</a>
+              {% if backup.name|slice:"-4:" == ".gpg" %}
+                <span class="encrypted-indicator" title="{% trans 'Encrypted backup' %}">🔒</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>{% trans 'No backups found.' %}</p>
+  {% endif %}
+  
+  <p>
+    {% trans 'Backup directory:' %} <code>{{ backup_dir }}</code>
+  </p>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const encryptCheckbox = document.getElementById('encrypt');
+    const encryptKeyOption = document.getElementById('encrypt-key-option');
+    
+    if (encryptCheckbox && encryptKeyOption) {
+      encryptCheckbox.addEventListener('change', function() {
+        encryptKeyOption.style.display = this.checked ? 'block' : 'none';
+      });
+    }
+  });
+</script>
+{% endblock %}
+
