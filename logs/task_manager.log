@@ -1,0 +1,41 @@
+INFO 2025-04-27 00:32:02,989 autoreload 19612 8040 Watching for file changes with StatReloader
+ERROR 2025-04-27 00:32:09,049 basehttp 19612 8440 "GET / HTTP/1.1" 500 73483
+INFO 2025-04-27 00:34:00,154 autoreload 14540 11712 Watching for file changes with StatReloader
+ERROR 2025-04-27 00:34:46,958 basehttp 14540 10356 "GET / HTTP/1.1" 500 73483
+INFO 2025-04-27 00:36:28,806 autoreload 8844 16104 Watching for file changes with StatReloader
+INFO 2025-04-27 00:39:26,716 autoreload 20312 5864 Watching for file changes with StatReloader
+INFO 2025-04-27 00:53:17,559 middleware 20312 13952 Request 43bd2d65-ded5-48ff-94a5-f47ddb491a85: GET /
+INFO 2025-04-27 00:53:17,567 middleware 20312 13952 Request 43bd2d65-ded5-48ff-94a5-f47ddb491a85 completed in 0.0096s
+INFO 2025-04-27 00:53:17,568 middleware 20312 13952 Response 302 for request 43bd2d65-ded5-48ff-94a5-f47ddb491a85
+INFO 2025-04-27 00:53:17,568 basehttp 20312 13952 "GET / HTTP/1.1" 302 0
+INFO 2025-04-27 00:53:17,574 middleware 20312 13952 Request 5d6800d3-8e45-4af9-9bf9-d013d110b733: GET /dashboard/
+INFO 2025-04-27 00:53:17,575 middleware 20312 13952 Request 5d6800d3-8e45-4af9-9bf9-d013d110b733 completed in 0.0007s
+INFO 2025-04-27 00:53:17,575 middleware 20312 13952 Response 302 for request 5d6800d3-8e45-4af9-9bf9-d013d110b733
+INFO 2025-04-27 00:53:17,575 basehttp 20312 13952 "GET /dashboard/ HTTP/1.1" 302 0
+INFO 2025-04-27 00:53:17,580 middleware 20312 13952 Request af1feb80-9ea3-4305-96b3-3469795e7012: GET /auth/login/
+INFO 2025-04-27 00:53:17,650 middleware 20312 13952 Request af1feb80-9ea3-4305-96b3-3469795e7012 completed in 0.0700s
+INFO 2025-04-27 00:53:17,650 middleware 20312 13952 Response 200 for request af1feb80-9ea3-4305-96b3-3469795e7012
+INFO 2025-04-27 00:53:17,651 basehttp 20312 13952 "GET /auth/login/?next=/dashboard/ HTTP/1.1" 200 7402
+INFO 2025-04-27 00:53:17,681 basehttp 20312 1616 "GET /static/tasks/js/main.js HTTP/1.1" 304 0
+INFO 2025-04-27 00:53:17,716 basehttp 20312 13952 "GET /static/tasks/css/styles.css HTTP/1.1" 200 18516
+INFO 2025-04-27 00:53:19,311 middleware 20312 13952 Request b986c18c-fa4b-43a7-99d5-b6f43ac9ef47: POST /auth/login/
+INFO 2025-04-27 00:53:19,312 middleware 20312 13952 Login attempt for user 'Nekicj'
+INFO 2025-04-27 00:53:19,555 middleware 20312 13952 Request b986c18c-fa4b-43a7-99d5-b6f43ac9ef47 completed in 0.2437s
+INFO 2025-04-27 00:53:19,555 middleware 20312 13952 Response 302 for request b986c18c-fa4b-43a7-99d5-b6f43ac9ef47
+INFO 2025-04-27 00:53:19,559 basehttp 20312 13952 "POST /auth/login/ HTTP/1.1" 302 0
+INFO 2025-04-27 00:53:19,566 middleware 20312 13952 Request 857aff35-7fb7-49a6-aa4b-d1779e5558e7: GET /dashboard/
+INFO 2025-04-27 00:53:19,605 middleware 20312 13952 Request 857aff35-7fb7-49a6-aa4b-d1779e5558e7 completed in 0.0421s
+INFO 2025-04-27 00:53:19,605 middleware 20312 13952 Response 200 for request 857aff35-7fb7-49a6-aa4b-d1779e5558e7
+INFO 2025-04-27 00:53:19,605 basehttp 20312 13952 "GET /dashboard/ HTTP/1.1" 200 28941
+INFO 2025-04-27 00:53:21,742 middleware 20312 13952 Request b0904d73-57b7-409c-b4c4-495277ecd233: GET /projects/2/
+INFO 2025-04-27 00:53:21,877 middleware 20312 13952 Request b0904d73-57b7-409c-b4c4-495277ecd233 completed in 0.1356s
+ERROR 2025-04-27 00:53:21,877 middleware 20312 13952 Error response 500 for request b0904d73-57b7-409c-b4c4-495277ecd233
+ERROR 2025-04-27 00:53:21,877 basehttp 20312 13952 "GET /projects/2/ HTTP/1.1" 500 263357
+INFO 2025-04-27 00:53:21,943 middleware 20312 1616 Request 9d6e486e-1446-454f-b256-7ce106eec760: GET /favicon.ico
+INFO 2025-04-27 00:53:21,957 middleware 20312 1616 Request 9d6e486e-1446-454f-b256-7ce106eec760 completed in 0.0159s
+WARNING 2025-04-27 00:53:21,957 middleware 20312 1616 Error response 404 for request 9d6e486e-1446-454f-b256-7ce106eec760
+INFO 2025-04-27 00:53:21,958 basehttp 20312 1616 - Broken pipe from ('127.0.0.1', 62989)
+INFO 2025-04-27 00:53:23,436 middleware 20312 13952 Request 35fe9c4d-390a-4550-8233-1d1c996bc3ed: GET /projects/1/
+INFO 2025-04-27 00:53:23,498 middleware 20312 13952 Request 35fe9c4d-390a-4550-8233-1d1c996bc3ed completed in 0.0637s
+ERROR 2025-04-27 00:53:23,498 middleware 20312 13952 Error response 500 for request 35fe9c4d-390a-4550-8233-1d1c996bc3ed
+ERROR 2025-04-27 00:53:23,499 basehttp 20312 13952 "GET /projects/1/ HTTP/1.1" 500 263357

@@ -1,0 +1,2 @@
+INFO 2025-04-27 00:53:17,580 middleware 20312 13952 Security-sensitive request af1feb80-9ea3-4305-96b3-3469795e7012: GET /auth/login/
+INFO 2025-04-27 00:53:19,312 middleware 20312 13952 Security-sensitive request b986c18c-fa4b-43a7-99d5-b6f43ac9ef47: POST /auth/login/
