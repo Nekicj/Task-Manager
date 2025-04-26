@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="Task management application for individuals and teams">
+    <meta name="author" content="Task Manager">
+    <title>{% block title %}Task Manager{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="/static/tasks/images/favicon.ico" type="image/x-icon">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/tasks/css/styles.css">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Page-specific CSS -->
+    {% if 'project_detail' in request.path %}
+    <link rel="stylesheet" href="/static/tasks/css/project_detail.css">
+    {% endif %}
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% if user.theme_preference == 'dark' %}dark-theme{% else %}light-theme{% endif %}">
+    <!-- CSRF Token for AJAX requests -->
+    {% csrf_token %}
+    
+    <!-- Notifications container for JS notifications -->
+    <div id="notifications-container"></div>
+    
+    <div class="app-container">
+        <!-- Header -->
+        {% include 'tasks/_header.html' %}
+        
+        <div class="main-container">
+            <!-- Sidebar - only show if user is authenticated -->
+            {% if user.is_authenticated %}
+                {% include 'tasks/_sidebar.html' %}
+            {% endif %}
+            
+            <!-- Main content -->
+            <main class="content">
+                <!-- Messages/Notifications -->
+                {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                    <div class="message message-{{ message.tags }}">
+                        <div class="message-content">
+                            {{ message }}
+                        </div>
+                        <button class="message-close" onclick="this.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Page header -->
+                <div class="page-header">
+                    <h1>{% block page_title %}Welcome to Task Manager{% endblock %}</h1>
+                    <div class="page-actions">
+                        {% block page_actions %}{% endblock %}
+                    </div>
+                </div>
+                
+                <!-- Main content -->
+                {% block content %}
+                <p>Default content</p>
+                {% endblock %}
+            </main>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <p>&copy; {% now "Y" %} Task Manager. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="/static/tasks/js/main.js"></script>
+    
+    <!-- Page-specific JS -->
+    {% if 'project_detail' in request.path %}
+    <script src="/static/tasks/js/project_detail.js"></script>
+    {% endif %}
+    
+    <!-- Common UI interactions -->
+    <script>
+        // Close message alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(message => {
+                setTimeout(() => {
+                    message.classList.add('message-hiding');
+                    setTimeout(() => {
+                        message.remove();
+                    }, 300);
+                }, 5000);
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

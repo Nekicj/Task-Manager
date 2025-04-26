@@ -1,0 +1,110 @@
+<header class="app-header">
+    <div class="header-container">
+        <!-- Logo and brand -->
+        <div class="brand">
+            <a href="{% url 'tasks:dashboard' %}" class="logo">
+                <i class="fas fa-tasks"></i>
+                <span>Task Manager</span>
+            </a>
+            <button id="mobile-menu-toggle" class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="main-nav" id="main-nav">
+            {% if user.is_authenticated %}
+            <ul class="nav-list">
+                <li class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <a href="{% url 'tasks:dashboard' %}">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if 'task_list' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'tasks:task_list' %}">
+                        <i class="fas fa-tasks"></i>
+                        <span>Tasks</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if 'project' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'tasks:project_list' %}">
+                        <i class="fas fa-project-diagram"></i>
+                        <span>Projects</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if 'category' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'tasks:category_list' %}">
+                        <i class="fas fa-tags"></i>
+                        <span>Categories</span>
+                    </a>
+                </li>
+            </ul>
+            {% endif %}
+        </nav>
+        
+        <!-- Quick actions and user menu -->
+        <div class="header-actions">
+            {% if user.is_authenticated %}
+            <!-- Quick add dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-primary btn-with-icon dropdown-toggle">
+                    <i class="fas fa-plus"></i>
+                    <span>Create</span>
+                </button>
+                <div class="dropdown-menu">
+                    <a href="{% url 'tasks:task_create' %}" class="dropdown-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>New Task</span>
+                    </a>
+                    <a href="{% url 'tasks:project_create' %}" class="dropdown-item">
+                        <i class="fas fa-project-diagram"></i>
+                        <span>New Project</span>
+                    </a>
+                    <a href="{% url 'tasks:category_create' %}" class="dropdown-item">
+                        <i class="fas fa-tag"></i>
+                        <span>New Category</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- User menu -->
+            <div class="dropdown user-dropdown">
+                <button class="user-avatar dropdown-toggle">
+                    {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}">
+                    {% else %}
+                    <div class="avatar-initials">{{ user.username|first|upper }}</div>
+                    {% endif %}
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-header">
+                        <p class="user-name">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="user-email">{{ user.email }}</p>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="{% url 'tasks:logout' %}" class="dropdown-item">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <!-- Auth links for non-authenticated users -->
+            <div class="auth-links">
+                <a href="{% url 'tasks:login' %}" class="btn btn-outline">Login</a>
+                <a href="{% url 'tasks:register' %}" class="btn btn-primary">Register</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</header>
+

@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Task - Task Manager{% endblock %}
+
+{% block page_title %}Delete Task: {{ task.title }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-outline btn-with-icon">
+        <i class="fas fa-arrow-left"></i>
+        <span>Back to Task</span>
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="delete-confirmation">
+            <div class="warning-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            
+            <h3 class="confirmation-title">Are you sure you want to delete this task?</h3>
+            
+            <p class="confirmation-text">
+                This action cannot be undone. The task and all associated data will be permanently removed from the system.
+            </p>
+            
+            <div class="task-details">
+                <h4>Task Details</h4>
+                
+                <div class="task-header-info">
+                    <div class="task-status status-{{ task.status }}">
+                        {{ task.get_status_display }}
+                    </div>
+                    <div class="task-priority priority-{{ task.priority }}">
+                        {{ task.get_priority_display }} Priority
+                    </div>
+                    {% if task.is_overdue %}
+                    <div class="task-overdue">
+                        <i class="fas fa-exclamation-circle"></i> Overdue
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Title:</span>
+                    <span class="detail-value">{{ task.title }}</span>
+                </div>
+                
+                {% if task.description %}
+                <div class="detail-item">
+                    <span class="detail-label">Description:</span>
+                    <span class="detail-value">{{ task.description }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="detail-item">
+                    <span class="detail-label">Project:</span>
+                    <span class="detail-value">
+                        <a href="{% url 'tasks:project_detail' task.project.id %}">{{ task.project.title }}</a>
+                    </span>
+                </div>
+                
+                {% if task.category %}
+                <div class="detail-item">
+                    <span class="detail-label">Category:</span>
+                    <span class="detail-value">
+                        <span class="category-color" style="background-color: {{ task.category.color }}"></span>
+                        {{ task.category.name }}
+                    </span>
+                </div>
+                {% endif %}
+                
+                {% if task.assigned_to %}
+                <div class="detail-item">
+                    <span class="detail-label">Assigned to:</span>
+                    <span class="detail-value">
+                        <span class="user-avatar">
+                            {% if task.assigned_to.profile_picture %}
+                            <img src="{{ task.assigned_to.profile_picture.url }}" alt="{{ task.assigned_to.username }}" class="avatar-xs">
+                            {% else %}
+                            <div class="avatar-xs avatar-initials">{{ task.assigned_to.username|first|upper }}</div>
+                            {% endif %}
+                        </span>
+                        {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}
+                    </span>
+                </div>
+                {% endif %}
+                
+                <div class="detail-item">
+                    <span class="detail-label">Created by:</span>
+                    <span class="detail-value">
+                        <span class="user-avatar">
+                            {% if task.created_by.profile_picture %}
+                            <img src="{{ task.created_by.profile_picture.url }}" alt="{{ task.created_by.username }}" class="avatar-xs">
+                            {% else %}
+                            <div class="avatar-xs avatar-initials">{{ task.created_by.username|first|upper }}</div>
+                            {% endif %}
+                        </span>
+                        {{ task.created_by.get_full_name|default:task.created_by.username }}
+                    </span>
+                </div>
+                
+                {% if task.deadline %}
+                <div class="detail-item">
+                    <span class="detail-label">Deadline:</span>
+                    <span class="detail-value {% if task.is_overdue %}overdue{% endif %}">
+                        <i class="fas fa-clock"></i> {{ task.deadline }}
+                        {% if task.is_overdue %}
+                        <span class="overdue-tag">Overdue</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+                
+                {% if task.completed_at %}
+                <div class="detail-item">
+                    <span class="detail-label">Completed at:</span>
+                    <span class="detail-value">{{ task.completed_at }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="detail-item">
+                    <span class="detail-label">Created:</span>
+                    <span class="detail-value">{{ task.created_at }}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Updated:</span>
+                    <span class="detail-value">{{ task.updated_at }}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Progress:</span>
+                    <span class="detail-value">
+                        <div class="progress-mini">
+                            <div class="progress-bar" style="width: {{ task.progress_percentage }}%"></div>
+                        </div>
+                        <span class="progress-text">{{ task.progress_percentage }}% complete</span>
+                    </span>
+                </div>
+            </div>
+            
+            {% with comment_count=task.comments.count %}
+            {% if comment_count > 0 %}
+            <div class="alert alert-warning">
+                <i class="fas fa-comments"></i>
+                <div class="alert-content">
+                    <strong>Warning:</strong> This task has {{ comment_count }} comment{{ comment_count|pluralize }}.
+                    <div class="alert-warning-message">All comments will be permanently deleted.</div>
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+            
+            {% with attachment_count=task.attachments.count %}
+            {% if attachment_count > 0 %}
+            <div class="alert alert-warning">
+                <i class="fas fa-paperclip"></i>
+                <div class="alert-content">
+                    <strong>Warning:</strong> This task has {{ attachment_count }} attachment{{ attachment_count|pluralize }}.
+                    <div class="alert-warning-message">All attachments will be permanently deleted.</div>
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="confirmation-actions">
+                    <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-danger">Delete Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-confirmation {
+        text-align: center;
+        max-width: 700px;
+        margin: 0 auto;
+        padding: var(--spacing-4);
+    }
+    
+    .warning-icon {
+        font-size: 3rem;
+        color: var(--color-danger);
+        margin-bottom: var(--spacing-4);
+    }
+    
+    .confirmation-title {
+        font-size: var(--font-size-xl);
+        margin-bottom: var(--spacing-4);
+        color: var(--color-danger);
+    }
+    
+    .confirmation-text {
+        margin-bottom: var(--spacing-6);
+        color: var(--color-text-secondary);
+    }
+    
+    .task-details {
+        text-align: left;
+        background-color: var(--color-background);
+        border-radius: var(--border-radius-md);
+        padding: var(--spacing-4);
+        margin-bottom: var(--spacing-4);
+    }
+    
+    .task-details h4 {
+        margin-bottom: var(--spacing-3);
+        font-size: var(--font-size-lg);
+    }
+    
+    .task-header-info {
+        display: flex;
+        gap: var(--spacing-2);
+        flex-wrap: wrap;
+        margin-bottom: var(--spacing-3);
+    }
+    
+    .task-status,
+    .task-priority,
+    .task-overdue {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: var(--border-radius-full);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+    }
+    
+    .status-todo {
+        background-color: rgba(108, 117, 125, 0.2);
+        color: var(--color-status-todo);
+    }
+    
+    .status-in-progress {
+        background-color: rgba(0, 123, 255, 0.2);
+        color: var(--color-status-in-progress);
+    }
+    
+    .status-review {
+        background-color: rgba(253, 126, 20, 0.2);
+        color: var(--color-status-review);
+    }
+    
+    .status-completed {
+        background-color: rgba(40, 167, 69, 0.2);
+        color: var(--color-status-completed);
+    }
+    
+    .priority-low {
+        background-color: rgba(40, 167, 69, 0.2);
+        color: var(--color-priority-low);
+    }
+    
+    .priority-medium {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: var(--color-priority-medium);
+    }
+    
+    .priority-high {
+        background-color: rgba(253, 126, 20, 0.2);
+        color: var(--color-priority-high);
+    }
+    
+    .priority-urgent {
+        background-color: rgba(220, 53, 69, 0.2);
+        color: var(--color-priority-urgent);
+    }
+    
+    .task-overdue {
+        background-color: rgba(220, 53, 69, 0.2);
+        color: var(--color-danger);
+    }
+    
+    .detail-item {
+        margin-bottom: var(--spacing-2);
+        display: flex;
+    }
+    
+    .detail-label {
+        font-weight: var(--font-weight-bold);
+        min-width: 120px;
+    }
+    
+    .detail-value {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+    
+    .category-color {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        margin-right: var(--spacing-2);
+    }
+    
+    .user-avatar {
+        margin-right: var(--spacing-2);
+    }
+    
+    .avatar-xs {
+        width: 24px;
+        height: 24px;
+        border-radius: var(--border-radius-full);
+    }
+    
+    .avatar-initials {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--color-primary);
+        color: white;
+        font-weight: var(--font-weight-bold);
+        border-radius: var(--border-radius-full);
+    }
+    
+    .avatar-xs.avatar-initials {
+        width: 24px;
+        height: 24px;
+        font-size: var(--font-size-xs);
+    }
+    
+    .overdue {
+        color: var(--color-danger);
+    }
+    
+    .overdue-tag {
+        display: inline-block;
+        background-color: var(--color-danger);
+        color: white;
+        font-size: var(--font-size-xs);
+        padding: 2px 6px;
+        border-radius: var(--border-radius-full);
+        margin-left: var(--spacing-2);
+    }
+    
+    .progress-mini {
+        height: 8px;
+        background-color: var(--color-background);
+        border-radius: var(--border-radius-full);
+        overflow: hidden;
+        width: 100px;
+        margin-right: var(--spacing-2);
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background-color: var(--color-primary);
+    }
+    
+    .progress-text {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+    
+    .alert {
+        padding: var(--spacing-3) var(--spacing-4);
+        margin-bottom: var(--spacing-4);
+        border-radius: var(--border-radius-md);
+        text-align: left;
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    .alert i {
+        margin-right: var(--spacing-3);
+        font-size: var(--font-size-xl);
+        margin-top: 3px;
+    }
+    
+    .alert-content {
+        flex: 1;
+    }
+    
+    .alert-warning {
+        background-color: rgba(243, 156, 18, 0.1);
+        color: var(--color-warning);
+        border: 1px solid rgba(243, 156, 18, 0.2);
+    }
+    
+    .alert-warning-message {
+        font-weight: var(--font-weight-bold);
+        margin-top: var(--spacing-2);
+        color: var(--color-danger);
+    }
+    
+    .confirmation-actions {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-4);
+        margin-top: var(--spacing-6);
+    }
+</style>
+{% endblock %}
+

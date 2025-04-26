@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ task.title }} | Task Manager{% endblock %}
+
+{% block page_title %}Task Details{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'tasks:task_update' task.id %}" class="btn btn-primary btn-with-icon">
+    <i class="fas fa-edit"></i>
+    <span>Edit Task</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="task-detail-container">
+    <!-- Task Header -->
+    <div class="task-detail-header">
+        <div class="task-breadcrumb">
+            <a href="{% url 'tasks:project_detail' task.project.id %}">{{ task.project.title }}</a>
+            <i class="fas fa-chevron-right"></i>
+            <a href="{% url 'tasks:task_list' %}">Tasks</a>
+            <i class="fas fa-chevron-right"></i>
+            <span>{{ task.title }}</span>
+        </div>
+        
+        <div class="task-title-section">
+            <h1 class="task-title">{{ task.title }}</h1>
+            
+            <div class="task-actions dropdown">
+                <button class="btn btn-outline dropdown-toggle">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <a href="{% url 'tasks:task_update' task.id %}" class="dropdown-item">
+                        <i class="fas fa-edit"></i> Edit Task
+                    </a>
+                    <button type="button" class="dropdown-item task-status-btn" data-task-id="{{ task.id }}" data-status="completed" 
+                        {% if task.status == TaskStatus.COMPLETED %}disabled{% endif %}>
+                        <i class="fas fa-check-circle"></i> Mark Complete
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'tasks:task_delete' task.id %}" class="dropdown-item text-danger">
+                        <i class="fas fa-trash"></i> Delete Task
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="task-meta-tags">
+            <div class="task-status-tag status-{{ task.status }}">
+                <i class="fas fa-circle"></i>
+                <span>{{ task.get_status_display }}</span>
+            </div>
+            <div class="task-priority-tag priority-{{ task.priority }}">
+                <i class="fas fa-flag"></i>
+                <span>{{ task.get_priority_display }}</span>
+            </div>
+            {% if task.category %}
+            <div class="task-category-tag" style="background-color: {{ task.category.color }};">
+                <i class="fas fa-tag"></i>
+                <span>{{ task.category.name }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="task-detail-content">
+        <!-- Main Task Info -->
+        <div class="task-detail-main card">
+            <div class="card-body">
+                <!-- Description -->
+                <div class="task-section">
+                    <h3 class="section-title">Description</h3>
+                    <div class="task-description">
+                        {% if task.description %}
+                        {{ task.description|linebreaks }}
+                        {% else %}
+                        <p class="text-muted">No description provided</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Task Progress -->
+                <div class="task-section">
+                    <h3 class="section-title">Progress</h3>
+                    <div class="task-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ task.progress_percentage }}%;"></div>
+                            </div>
+                            <div class="progress-percentage">{{ task.progress_percentage }}%</div>
+                        </div>
+                        
+                        <div class="status-update-form">
+                            <form>
+                                <div class="form-group">
+                                    <label for="task-status">Update Status:</label>
+                                    <select id="task-status" class="form-control task-status-select" data-task-id="{{ task.id }}">
+                                        {% for status_value, status_label in task.get_status_choices %}
+                                        <option value="{{ status_value }}" {% if task.status == status_value %}selected{% endif %}>
+                                            {{ status_label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar with Task Details -->
+        <div class="task-detail-sidebar">
+            <div class="task-metadata card">
+                <div class="card-header">
+                    <h3 class="card-title">Task Details</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="task-metadata-list">
+                        <!-- Project -->
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-project-diagram"></i>
+                                <span>Project:</span>
+                            </div>
+                            <div class="metadata-value">
+                                <a href="{% url 'tasks:project_detail' task.project.id %}">{{ task.project.title }}</a>
+                            </div>
+                        </li>
+                        
+                        <!-- Assigned To -->
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-user"></i>
+                                <span>Assigned To:</span>
+                            </div>
+                            <div class="metadata-value">
+                                {% if task.assigned_to %}
+                                <div class="assigned-user">
+                                    {% if task.assigned_to.profile_picture %}
+                                    <img src="{{ task.assigned_to.profile_picture.url }}" alt="{{ task.assigned_to.username }}" class="avatar-sm">
+                                    {% else %}
+                                    <div class="avatar-initials avatar-sm">{{ task.assigned_to.username|first|upper }}</div>
+                                    {% endif %}
+                                    <span>{{ task.assigned_to.username }}</span>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                            </div>
+                        </li>
+                        
+                        <!-- Created By -->
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-user-plus"></i>
+                                <span>Created By:</span>
+                            </div>
+                            <div class="metadata-value">
+                                {{ task.created_by.username }}
+                            </div>
+                        </li>
+                        
+                        <!-- Deadline -->
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Deadline:</span>
+                            </div>
+                            <div class="metadata-value {% if task.is_overdue %}overdue{% endif %}">
+                                {% if task.deadline %}
+                                {{ task.deadline|date:"F j, Y, g:i a" }}
+                                {% if task.is_overdue %}<span class="overdue-label">Overdue</span>{% endif %}
+                                {% else %}
+                                <span class="text-muted">No deadline</span>
+                                {% endif %}
+                            </div>
+                        </li>
+                        
+                        <!-- Time Remaining -->
+                        {% if task.deadline and task.status != 'completed' %}
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-hourglass-half"></i>
+                                <span>Time Remaining:</span>
+                            </div>
+                            <div class="metadata-value {% if task.is_overdue %}overdue{% endif %}">
+                                {% if task.is_overdue %}
+                                Overdue by {{ task.time_remaining|timesince }}
+                                {% else %}
+                                {{ task.deadline|timeuntil }}
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Estimated Hours -->
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-clock"></i>
+                                <span>Estimated Hours:</span>
+                            </div>
+                            <div class="metadata-value">
+                                {{ task.estimated_hours }}
+                            </div>
+                        </li>
+                        
+                        <!-- Actual Hours -->
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-stopwatch"></i>
+                                <span>Actual Hours:</span>
+                            </div>
+                            <div class="metadata-value">
+                                {{ task.actual_hours }}
+                            </div>
+                        </li>
+                        
+                        <!-- Created At -->
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-calendar-plus"></i>
+                                <span>Created:</span>
+                            </div>
+                            <div class="metadata-value">
+                                {{ task.created_at|date:"F j, Y, g:i a" }}
+                            </div>
+                        </li>
+                        
+                        <!-- Last Updated -->
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-calendar-check"></i>
+                                <span>Last Updated:</span>
+                            </div>
+                            <div class="metadata-value">
+                                {{ task.updated_at|date:"F j, Y, g:i a" }}
+                            </div>
+                        </li>
+                        
+                        <!-- Completed At -->
+                        {% if task.completed_at %}
+                        <li class="metadata-item">
+                            <div class="metadata-label">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Completed:</span>
+                            </div>
+                            <div class="metadata-value">
+                                {{ task.completed_at|date:"F j, Y, g:i a" }}
+                            </div>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comments Section -->
+    <div class="task-comments card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-comments"></i> Comments ({{ comments|length }})</h3>
+        </div>
+        <div class="card-body">
+            <!-- Comment Form -->
+            <div class="comment-form-container">
+                <form method="post" action="{% url 'tasks:task_add_comment' task.id %}" class="comment-form">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        {{ comment_form.text }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Comment</button>
+                </form>
+            </div>
+            
+            <!-- Comments List -->
+            <div class="comments-list">
+                {% if comments %}
+                    {% for comment in comments %}
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <div class="comment-user">
+                                {% if comment.user.profile_picture %}
+                                <img src="{{ comment.user.profile_picture.url }}" alt="{{ comment.user.username }}" class="avatar-sm">
+                                {% else %}
+                                <div class="avatar-initials avatar-sm">{{ comment.user.username|first|upper }}</div>
+                                {% endif %}
+                                <span class="comment-username">{{ comment.user.username }}</span>
+                            </div>
+                            <div class="comment-date">
+                                {{ comment.created_at|date:"F j, Y, g:i a" }}
+                            </div>
+                        </div>
+                        <div class="comment-content">
+                            {{ comment.text|linebreaks }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="comments-empty">
+                        <p>No comments yet. Be the first to comment!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Attachments Section -->
+    <div class="task-attachments card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-paperclip"></i> Attachments ({{ attachments|length }})</h3>
+        </div>
+        <div class="card-body">
+            <!-- Upload Form -->
+            <div class="attachment-form-container">
+                <form method="post" action="{% url 'tasks:task_add_attachment' task.id %}" class="attachment-form" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="{{ attachment_form.name.id_for_label }}">{{ attachment_form.name.label }}</label>
+                        {{ attachment_form.name }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ attachment_form.file.id_for_label }}">{{ attachment_form.file.label }}</label>
+                        {{ attachment_form.file }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload Attachment</button>
+                </form>
+            </div>
+            
+            <!-- Attachments List -->
+            <div class="attachments-list">
+                {% if attachments %}
+                    <div class="attachment-grid">
+                        {% for attachment in attachments %}
+                        <div class="attachment-item">
+                            <div class="attachment-icon">
+                                <i class="fas fa-file"></i>
+                            </div>
+                            <div class="attachment-details">
+                                <div class="attachment-name">
+                                    <a href="{{ attachment.file.url }}" target="_blank">{{ attachment.name }}</a>
+                                <div class="attachment-meta">
+                                    <span class="attachment-uploader">{{ attachment.uploaded_by.username }}</span>
+                                    <span class="attachment-date">{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                                    <span class="attachment-size">{{ attachment.file.size|filesizeformat }}</span>
+                                </div>
+                            </div>
+                            <div class="attachment-actions">
+                                <a href="{{ attachment.file.url }}" class="btn btn-sm btn-outline" download>
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                {% if request.user == attachment.uploaded_by or request.user == task.created_by or request.user == task.project.owner %}
+                                <a href="#" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this attachment?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="attachments-empty">
+                        <p>No attachments yet. Upload files to keep track of important documents.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Related Tasks Section -->
+    {% if related_tasks %}
+    <div class="related-tasks card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-link"></i> Related Tasks</h3>
+        </div>
+        <div class="card-body">
+            <div class="related-tasks-list">
+                {% for related_task in related_tasks %}
+                <div class="related-task-item">
+                    <div class="related-task-status">
+                        <span class="status-dot status-{{ related_task.status }}"></span>
+                    </div>
+                    <div class="related-task-title">
+                        <a href="{% url 'tasks:task_detail' related_task.id %}">{{ related_task.title }}</a>
+                    </div>
+                    <div class="related-task-meta">
+                        <span class="related-task-project">{{ related_task.project.title }}</span>
+                        {% if related_task.deadline %}
+                        <span class="related-task-deadline {% if related_task.is_overdue %}overdue{% endif %}">
+                            {{ related_task.deadline|date:"M d, Y" }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

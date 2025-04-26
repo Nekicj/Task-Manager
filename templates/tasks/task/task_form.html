@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.id %}Edit Task: {{ form.instance.title }}{% else %}Create New Task{% endif %} | Task Manager{% endblock %}
+
+{% block page_title %}{% if form.instance.id %}Edit Task{% else %}Create New Task{% endif %}{% endblock %}
+
+{% block content %}
+<div class="task-form-container">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                {% if form.instance.id %}
+                <i class="fas fa-edit"></i> Edit Task: {{ form.instance.title }}
+                {% else %}
+                <i class="fas fa-plus-circle"></i> Create New Task
+                {% endif %}
+            </h2>
+        </div>
+        <div class="card-body">
+            <form method="post" class="task-form">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="form-row">
+                    <!-- Task Title -->
+                    <div class="col-md-12 form-group">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }} <span class="required">*</span></label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.title.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Project -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.project.id_for_label }}" class="form-label">{{ form.project.label }} <span class="required">*</span></label>
+                        {{ form.project }}
+                        {% if form.project.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.project.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Category -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.category.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.status.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Priority -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.priority.id_for_label }}" class="form-label">{{ form.priority.label }}</label>
+                        {{ form.priority }}
+                        {% if form.priority.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.priority.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Assigned To -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.assigned_to.id_for_label }}" class="form-label">{{ form.assigned_to.label }}</label>
+                        {{ form.assigned_to }}
+                        {% if form.assigned_to.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.assigned_to.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Deadline -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.deadline.id_for_label }}" class="form-label">{{ form.deadline.label }}</label>
+                        {{ form.deadline }}
+                        {% if form.deadline.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.deadline.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Estimated Hours -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.estimated_hours.id_for_label }}" class="form-label">{{ form.estimated_hours.label }}</label>
+                        {{ form.estimated_hours }}
+                        {% if form.estimated_hours.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.estimated_hours.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="col-md-12 form-group">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.description.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">Provide a detailed description of the task. You can use plain text or simple formatting.</small>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="{% if request.GET.next %}{{ request.GET.next }}{% elif form.instance.id %}{% url 'tasks:task_detail' form.instance.id %}{% else %}{% url 'tasks:task_list' %}{% endif %}" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        {% if form.instance.id %}Update Task{% else %}Create Task{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add client-side validation
+        const form = document.querySelector('.task-form');
+        
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Validate title (required)
+            const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+            if (!titleInput.value.trim()) {
+                titleInput.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                titleInput.classList.remove('is-invalid');
+                titleInput.classList.add('is-valid');
+            }
+            
+            // Validate project (required)
+            const projectInput = document.getElementById('{{ form.project.id_for_label }}');
+            if (!projectInput.value) {
+                projectInput.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                projectInput.classList.remove('is-invalid');
+                projectInput.classList.add('is-valid');
+            }
+            
+            // Prevent form submission if validation fails
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+        
+        // Initialize any special form controls (like rich text editors, date pickers, etc.)
+        // This is a placeholder for any JavaScript initializations you might need
+    });
+</script>
+{% endblock %}
+

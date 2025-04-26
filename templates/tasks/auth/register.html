@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+
+{% block title %}Register | Task Manager{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/tasks/css/auth.css">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card card">
+        <div class="card-header text-center">
+            <h2 class="card-title"><i class="fas fa-user-plus"></i> Create Account</h2>
+            <p class="card-subtitle">Join Task Manager to organize your projects</p>
+        </div>
+        <div class="card-body">
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> Please correct the errors below.
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <div class="error-item">{{ field.label }}: {{ error }}</div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                <div class="error-item">{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <form method="post" action="{% url 'tasks:register' %}" class="register-form">
+                {% csrf_token %}
+                
+                <!-- Username Field -->
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                        <i class="fas fa-user"></i> Username <span class="required">*</span>
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.username.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <small class="form-text text-muted">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</small>
+                </div>
+                
+                <!-- Email Field -->
+                <div class="form-group">
+                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                        <i class="fas fa-envelope"></i> Email <span class="required">*</span>
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.email.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Name Fields -->
+                <div class="form-row">
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                            <i class="fas fa-user-tag"></i> First Name
+                        </label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                            <i class="fas fa-user-tag"></i> Last Name
+                        </label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Password Fields -->
+                <div class="form-group">
+                    <label for="{{ form.password1.id_for_label }}" class="form-label">
+                        <i class="fas fa-lock"></i> Password <span class="required">*</span>
+                    </label>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.password1.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Password Strength Meter -->
+                    <div class="password-strength-meter">
+                        <div class="strength-bar">
+                            <div class="strength-progress" id="password-strength"></div>
+                        </div>
+                        <span class="strength-text" id="strength-text">Password strength</span>
+                    </div>
+                    
+                    <small class="form-text text-muted">
+                        Your password must be at least 8 characters and can't be entirely numeric.
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.password2.id_for_label }}" class="form-label">
+                        <i class="fas fa-lock"></i> Confirm Password <span class="required">*</span>
+                    </label>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.password2.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Bio Field (Optional) -->
+                <div class="form-group">
+                    <label for="{{ form.bio.id_for_label }}" class="form-label">
+                        <i class="fas fa-comment-alt"></i> Bio
+                    </label>
+                    {{ form.bio }}
+                    {% if form.bio.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.bio.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <small class="form-text text-muted">Tell us a little about yourself (optional)</small>
+                </div>
+                
+                <!-- Terms Acceptance -->
+                <div class="form-group form-check">
+                    <input type="checkbox" name="terms_accepted" id="terms_accepted" class="form-check-input" required>
+                    <label for="terms_accepted" class="form-check-label">
+                        I accept the <a href="#" data-toggle="modal" data-target="#termsModal">Terms and Conditions</a>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-user-plus"></i> Register
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="card-footer text-center">
+            <p>Already have an account? <a href="{% url 'tasks:login' %}" class="login-link">Login</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" role="dialog" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Acceptance of Terms</h6>
+                <p>By registering for an account with Task Manager, you agree to these Terms and Conditions.</p>
+                
+                <h6>2. User Accounts</h6>
+                <p>You are responsible for safeguarding your password and account. Task Manager cannot and will not be liable for any loss or damage from your failure to maintain the security of your account.</p>
+                
+                <h6>3. Privacy Policy</h6>
+                <p>Your use of Task Manager is also governed by our Privacy Policy, which can be found on our website.</p>
+                
+                <h6>4. Content Responsibility</h6>
+                <p>You are solely responsible for the content that you upload, publish, display, or otherwise make available via Task Manager.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">I Understand</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Password strength indicator
+        const passwordInput = document.getElementById('{{ form.password1.id_for_label }}');
+        const strengthBar = document.getElementById('password-strength');
+        const strengthText = document.getElementById('strength-text');
+        
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            
+            // Length check
+            if (password.length >= 8) {
+                strength += 1;
+            }
+            
+            // Contains lowercase
+            if (/[a-z]/.test(password)) {
+                strength += 1;
+            }
+            
+            // Contains uppercase
+            if (/[A-Z]/.test(password)) {
+                strength += 1;
+            }
+            
+            // Contains number
+            if (/[0-9]/.test(password)) {
+                strength += 1;
+            }
+            
+            // Contains special char
+            if (/[^a-zA-Z0-9]/.test(password)) {
+                strength += 1;
+            }
+            
+            return strength;
+        }
+        
+        function updateStrengthMeter() {
+            const password = passwordInput.value;
+            const strength = checkPasswordStrength(password);
+            
+            // Update the strength bar width
+            let percentage = (strength / 5) * 100;
+            strengthBar.style.width = percentage + '%';
+            
+            // Update color based on strength
+            if (strength <= 2) {
+                strengthBar.style.backgroundColor = '#dc3545'; // Red
+                strengthText.textContent = 'Weak password';
+            } else if (strength <= 3) {
+                strengthBar.style.backgroundColor = '#ffc107'; // Yellow
+                strengthText.textContent = 'Moderate password';
+            } else {
+                strengthBar.style.backgroundColor = '#28a745'; // Green
+                strengthText.textContent = 'Strong password';
+            }
+        }
+        
+        passwordInput.addEventListener('input', updateStrengthMeter);
+        
+        // Form validation
+        const registerForm = document.querySelector('.register-form');
+        const termsCheckbox = document.getElementById('terms_accepted');
+        
+        registerForm.addEventListener('submit', function(e) {
+            let valid = true;
+            
+            // Reset validation states
+            const inputs = registerForm.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid');
+            });
+            
+            // Username validation
+            const username = document.getElementById('{{ form.username.id_for_label }}');
+            if (!username.value.trim()) {
+                username.classList.add('is-invalid');
+                valid = false;
+            }
+            
+            // Email validation
+            const email = document.getElementById('{{ form.email.id_for_label }}');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email.value.trim() || !emailRegex.test(email.value)) {
+                email.classList.add('is-invalid');
+                valid = false;
+            }
+            
+            // Password validation
+            const password1 = document.getElementById('{{ form.password1.id_for_label }}');
+            const password2 = document.getElementById('{{ form.password2.id_for_label }}');
+            
+            if (!password1.value || checkPasswordStrength(password1.value) < 3) {
+                password1.classList.add('is-invalid');
+                valid = false;
+            }
+            
+            if (password1.value !== password2.value) {
+                password2.classList.add('is-invalid');
+                valid = false;
+            }
+            
+            // Terms acceptance
+            if (!termsCheckbox.checked) {
+                termsCheckbox.classList.add('is-invalid');
+                valid = false;
+            }
+            
+            if (!valid) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+{% endblock %}
+

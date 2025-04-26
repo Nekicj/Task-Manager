@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | Task Manager{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card card">
+        <div class="card-header text-center">
+            <h2 class="card-title"><i class="fas fa-tasks"></i> Task Manager</h2>
+            <p class="card-subtitle">Sign in to your account</p>
+        </div>
+        <div class="card-body">
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> Your username and password didn't match. Please try again.
+            </div>
+            {% endif %}
+            
+            {% if next %}
+                {% if user.is_authenticated %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> Your account doesn't have access to this page. To proceed, please login with an account that has access.
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Please login to view this page.
+                </div>
+                {% endif %}
+            {% endif %}
+            
+            <form method="post" action="{% url 'tasks:login' %}" class="login-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                        <i class="fas fa-user"></i> Username
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <div class="invalid-feedback">
+                        {{ form.username.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}" class="form-label">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                    <div class="invalid-feedback">
+                        {{ form.password.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group form-check">
+                    <input type="checkbox" name="remember_me" id="remember_me" class="form-check-input">
+                    <label for="remember_me" class="form-check-label">Remember me</label>
+                </div>
+                
+                <input type="hidden" name="next" value="{{ next }}">
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                </div>
+            </form>
+            
+            <div class="auth-links">
+                <a href="{% url 'tasks:password_reset' %}" class="forgot-password">
+                    <i class="fas fa-key"></i> Forgot Password?
+                </a>
+            </div>
+        </div>
+        <div class="card-footer text-center">
+            <p>Don't have an account? <a href="{% url 'tasks:register' %}" class="register-link">Register</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Focus on username field when page loads
+        document.getElementById('{{ form.username.id_for_label }}').focus();
+        
+        // Simple form validation
+        const loginForm = document.querySelector('.login-form');
+        
+        loginForm.addEventListener('submit', function(e) {
+            let valid = true;
+            const username = document.getElementById('{{ form.username.id_for_label }}');
+            const password = document.getElementById('{{ form.password.id_for_label }}');
+            
+            if (!username.value.trim()) {
+                username.classList.add('is-invalid');
+                valid = false;
+            } else {
+                username.classList.remove('is-invalid');
+            }
+            
+            if (!password.value) {
+                password.classList.add('is-invalid');
+                valid = false;
+            } else {
+                password.classList.remove('is-invalid');
+            }
+            
+            if (!valid) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+{% endblock %}
+

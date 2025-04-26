@@ -1,0 +1,645 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Task Manager{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'tasks:task_create' %}" class="btn btn-primary btn-with-icon">
+    <i class="fas fa-plus"></i>
+    <span>New Task</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Overview -->
+<div class="dashboard-section">
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-header">
+                <h3>Tasks Due Today</h3>
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ due_today|default:0 }}</div>
+            <div class="trend trend-up">
+                <i class="fas fa-arrow-up"></i> {{ due_today|default:0 }} need attention
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <h3>In Progress</h3>
+                <div class="stat-icon">
+                    <i class="fas fa-spinner"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ status_counts.in_progress|default:0 }}</div>
+            <div class="trend">
+                <i class="fas fa-clock"></i> Active tasks
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <h3>Completed</h3>
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ status_counts.completed|default:0 }}</div>
+            <div class="trend trend-up">
+                <i class="fas fa-arrow-up"></i> Recently completed
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <h3>Overdue</h3>
+                <div class="stat-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ overdue_tasks|default:0 }}</div>
+            <div class="trend trend-down">
+                <i class="fas fa-arrow-up"></i> Require immediate attention
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="dashboard-section">
+    <div class="section-title">
+        <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+    </div>
+    <div class="quick-actions">
+        <a href="{% url 'tasks:task_create' %}" class="quick-action-btn">
+            <div class="quick-action-icon"><i class="fas fa-plus-circle"></i></div>
+            <div class="quick-action-text">New Task</div>
+        </a>
+        <a href="{% url 'tasks:project_create' %}" class="quick-action-btn">
+            <div class="quick-action-icon"><i class="fas fa-project-diagram"></i></div>
+            <div class="quick-action-text">New Project</div>
+        </a>
+        <a href="{% url 'tasks:task_list' %}?assigned_to={{ user.id }}" class="quick-action-btn">
+            <div class="quick-action-icon"><i class="fas fa-user-check"></i></div>
+            <div class="quick-action-text">My Tasks</div>
+        </a>
+        <a href="{% url 'tasks:task_list' %}?deadline_from={{ today|date:'Y-m-d' }}" class="quick-action-btn">
+            <div class="quick-action-icon"><i class="fas fa-calendar-day"></i></div>
+            <div class="quick-action-text">Due Today</div>
+        </a>
+        <a href="{% url 'tasks:task_list' %}?priority=high&priority=urgent" class="quick-action-btn">
+            <div class="quick-action-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="quick-action-text">High Priority</div>
+        </a>
+    </div>
+</div>
+
+<!-- Main Dashboard Content -->
+<div class="dashboard-section">
+    <div class="two-columns">
+        <!-- Left Column -->
+        <div>
+            <!-- Recent Projects Section -->
+            <div class="section-title">
+                <h2><i class="fas fa-project-diagram"></i> Recent Projects</h2>
+                <a href="{% url 'tasks:project_list' %}" class="btn btn-sm btn-outline">View All</a>
+            </div>
+            
+            {% if recent_projects %}
+            <div class="project-list">
+                {% for project in recent_projects %}
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-header">
+                            <h4 class="card-title">
+                                <a href="{% url 'tasks:project_detail' project.id %}">{{ project.title }}</a>
+                            </h4>
+                            <span class="badge {% if project.is_overdue %}badge-danger{% else %}badge-primary{% endif %}">
+                                {% if project.end_date %}Due: {{ project.end_date }}{% else %}No deadline{% endif %}
+                            </span>
+                        </div>
+                        <p class="card-text">{{ project.description|truncatechars:100 }}</p>
+                        
+                        <div class="progress-container">
+                            <div class="progress">
+                                <div class="progress-bar" style="width: {{ project.completion_percentage }}%"></div>
+                            </div>
+                            <div class="progress-stats">
+                                <span>Progress: {{ project.completion_percentage }}%</span>
+                                <span>{{ project.completed_task_count }}/{{ project.task_count }} tasks completed</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No projects yet</p>
+                <a href="{% url 'tasks:project_create' %}" class="btn btn-primary">Create Project</a>
+            </div>
+            {% endif %}
+            
+            <!-- Upcoming Tasks Section -->
+            <div class="section-title" style="margin-top: var(--spacing-6);">
+                <h2><i class="fas fa-calendar"></i> Upcoming Tasks</h2>
+                <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-outline">View All</a>
+            </div>
+            
+            {% if upcoming_tasks %}
+            <div class="task-list-compact">
+                {% for task in upcoming_tasks %}
+                <div class="task-item-compact">
+                    <div class="task-status-indicator status-{{ task.status }}"></div>
+                    <div class="task-details">
+                        <div class="task-title-small">
+                            <a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>
+                        </div>
+                        <div class="task-meta-small">
+                            <span>{{ task.project.title }}</span>
+                            <span class="priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                            {% if task.deadline %}
+                            <span class="{% if task.is_overdue %}overdue{% endif %}">
+                                <i class="fas fa-clock"></i> Due: {{ task.deadline|date:"M d, Y" }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No upcoming tasks</p>
+                <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">Create Task</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Right Column -->
+        <div>
+            <!-- Priority Tasks Section -->
+            <div class="section-title">
+                <h2><i class="fas fa-exclamation-circle"></i> Priority Tasks</h2>
+            </div>
+            
+            {% if priority_tasks %}
+            <div class="card">
+                <div class="card-body">
+                
+                <div class="card-body">
+                    <div class="priority-tasks-list">
+                        {% for task in priority_tasks %}
+                        <div class="priority-task-item">
+                            <div class="priority-indicator priority-{{ task.priority }}"></div>
+                            <div class="task-info">
+                                <div class="task-title">
+                                    <a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>
+                                </div>
+                                <div class="task-meta">
+                                    <span class="project-tag">{{ task.project.title }}</span>
+                                    {% if task.deadline %}
+                                    <span class="deadline {% if task.is_overdue %}overdue{% endif %}">
+                                        <i class="fas fa-clock"></i> {{ task.deadline|date:"M d, Y" }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No priority tasks</p>
+            </div>
+            {% endif %}
+            
+            <!-- Recent Activity Section -->
+            <div class="section-title" style="margin-top: var(--spacing-6);">
+                <h2><i class="fas fa-history"></i> Recent Activity</h2>
+            </div>
+            
+            {% if recent_tasks %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="activity-list">
+                        {% for task in recent_tasks %}
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">
+                                    <a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>
+                                    {% if task.status == 'completed' %}
+                                    was completed
+                                    {% elif task.status == 'in_progress' %}
+                                    is in progress
+                                    {% else %}
+                                    was updated
+                                    {% endif %}
+                                </div>
+                                <div class="activity-meta">
+                                    <span>{{ task.updated_at|date:"M d, Y H:i" }}</span>
+                                    {% if task.assigned_to %}
+                                    <span>Assigned to: {{ task.assigned_to.username }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No recent activity</p>
+            </div>
+            {% endif %}
+            
+            <!-- Task Status Chart -->
+            <div class="section-title" style="margin-top: var(--spacing-6);">
+                <h2><i class="fas fa-chart-pie"></i> Task Status</h2>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="taskStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dashboard specific styles */
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--spacing-4);
+        margin-bottom: var(--spacing-6);
+    }
+    
+    .stat-card {
+        background-color: var(--color-surface);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-4);
+        box-shadow: var(--shadow-sm);
+        transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .stat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--spacing-2);
+    }
+    
+    .stat-icon {
+        font-size: 1.5rem;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background-color: var(--color-primary-light);
+        color: var(--color-primary);
+    }
+    
+    .stat-value {
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-bold);
+        margin-top: var(--spacing-2);
+    }
+    
+    .trend {
+        font-size: var(--font-size-sm);
+        margin-top: var(--spacing-1);
+        display: flex;
+        align-items: center;
+    }
+    
+    .trend-up {
+        color: var(--color-success);
+    }
+    
+    .trend-down {
+        color: var(--color-danger);
+    }
+    
+    .trend i {
+        margin-right: var(--spacing-1);
+    }
+    
+    .section-title {
+        margin-bottom: var(--spacing-4);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .section-title h2 {
+        margin-bottom: 0;
+        font-size: var(--font-size-xl);
+    }
+    
+    .dashboard-section {
+        margin-bottom: var(--spacing-8);
+    }
+    
+    .two-columns {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: var(--spacing-4);
+    }
+    
+    @media (max-width: 991.98px) {
+        .two-columns {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .task-list-compact {
+        background-color: var(--color-surface);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .task-item-compact {
+        padding: var(--spacing-3);
+        border-bottom: 1px solid var(--color-divider);
+        display: flex;
+        align-items: center;
+    }
+    
+    .task-item-compact:last-child {
+        border-bottom: none;
+    }
+    
+    .task-status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: var(--spacing-3);
+    }
+    
+    .status-todo {
+        background-color: var(--color-status-todo);
+    }
+    
+    .status-in-progress {
+        background-color: var(--color-status-in-progress);
+    }
+    
+    .status-review {
+        background-color: var(--color-status-review);
+    }
+    
+    .status-completed {
+        background-color: var(--color-status-completed);
+    }
+    
+    .task-details {
+        flex: 1;
+    }
+    
+    .task-title-small {
+        font-weight: var(--font-weight-medium);
+        margin-bottom: var(--spacing-1);
+    }
+    
+    .task-meta-small {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        display: flex;
+        gap: var(--spacing-2);
+        flex-wrap: wrap;
+    }
+    
+    .priority-task-item {
+        padding: var(--spacing-3);
+        border-bottom: 1px solid var(--color-divider);
+        display: flex;
+        align-items: center;
+    }
+    
+    .priority-task-item:last-child {
+        border-bottom: none;
+    }
+    
+    .priority-indicator {
+        width: 4px;
+        height: 36px;
+        border-radius: 2px;
+        margin-right: var(--spacing-3);
+    }
+    
+    .priority-low {
+        background-color: var(--color-priority-low);
+    }
+    
+    .priority-medium {
+        background-color: var(--color-priority-medium);
+    }
+    
+    .priority-high {
+        background-color: var(--color-priority-high);
+    }
+    
+    .priority-urgent {
+        background-color: var(--color-priority-urgent);
+    }
+    
+    .activity-item {
+        padding: var(--spacing-3);
+        border-bottom: 1px solid var(--color-divider);
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-icon {
+        color: var(--color-primary);
+        margin-right: var(--spacing-3);
+        font-size: var(--font-size-lg);
+    }
+    
+    .activity-content {
+        flex: 1;
+    }
+    
+    .activity-title {
+        font-weight: var(--font-weight-medium);
+        margin-bottom: var(--spacing-1);
+    }
+    
+    .activity-meta {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        display: flex;
+        gap: var(--spacing-3);
+        flex-wrap: wrap;
+    }
+    
+    .chart-container {
+        height: 250px;
+        margin-top: var(--spacing-4);
+    }
+    
+    .progress-container {
+        margin-top: var(--spacing-2);
+        margin-bottom: var(--spacing-2);
+    }
+    
+    .progress {
+        height: 8px;
+        background-color: var(--color-background);
+        border-radius: var(--border-radius-full);
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background-color: var(--color-primary);
+    }
+    
+    .progress-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        margin-top: var(--spacing-1);
+    }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: var(--spacing-3);
+    }
+    
+    .quick-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: var(--spacing-3);
+        border-radius: var(--border-radius-md);
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        transition: all var(--transition-fast);
+    }
+    
+    .quick-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--color-primary);
+    }
+    
+    .quick-action-icon {
+        font-size: 1.5rem;
+        margin-bottom: var(--spacing-2);
+        color: var(--color-primary);
+    }
+    
+    .quick-action-text {
+        font-size: var(--font-size-sm);
+        color: var(--color-text);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: var(--spacing-6);
+        color: var(--color-text-secondary);
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-bold);
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: var(--border-radius-full);
+    }
+    
+    .badge-primary {
+        background-color: var(--color-primary);
+        color: white;
+    }
+    
+    .badge-danger {
+        background-color: var(--color-danger);
+        color: white;
+    }
+    
+    .overdue {
+        color: var(--color-danger);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get data from Django context
+        const statusData = {{ status_data|safe }};
+        const priorityData = {{ priority_data|safe }};
+        
+        // Initialize task status chart
+        if (document.getElementById('taskStatusChart')) {
+            const ctx = document.getElementById('taskStatusChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: statusData.labels,
+                    datasets: [{
+                        data: statusData.data,
+                        backgroundColor: [
+                            '#6c757d',  // To Do
+                            '#007bff',  // In Progress
+                            '#fd7e14',  // Review
+                            '#28a745',  // Completed
+                            '#343a40'   // Archived
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+

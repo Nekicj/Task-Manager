@@ -1,0 +1,159 @@
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>Navigation</h2>
+        <button class="sidebar-close" id="sidebar-close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <!-- Task Statistics -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-header" data-toggle="collapse" data-target="#statistics-content">
+            <h3><i class="fas fa-chart-bar"></i> Task Overview</h3>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-content" id="statistics-content">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">{{ due_today }}</div>
+                    <div class="stat-label">Due Today</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ overdue_tasks }}</div>
+                    <div class="stat-label">Overdue</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ status_counts.todo|default:0 }}</div>
+                    <div class="stat-label">To Do</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ status_counts.in_progress|default:0 }}</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Filters -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-header" data-toggle="collapse" data-target="#filters-content">
+            <h3><i class="fas fa-filter"></i> Quick Filters</h3>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-content" id="filters-content">
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="{% url 'tasks:task_list' %}?status=todo">
+                        <i class="fas fa-circle status-todo"></i> To Do
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tasks:task_list' %}?status=in_progress">
+                        <i class="fas fa-circle status-in-progress"></i> In Progress
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tasks:task_list' %}?priority=urgent&priority=high">
+                        <i class="fas fa-exclamation-circle priority-urgent"></i> High Priority
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tasks:task_list' %}?assigned_to={{ user.id }}">
+                        <i class="fas fa-user-check"></i> Assigned to Me
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tasks:task_list' %}?deadline_from={{ today|date:'Y-m-d' }}">
+                        <i class="fas fa-calendar-day"></i> Due Today
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tasks:task_list' %}?deadline_to={{ today|date:'Y-m-d' }}&status=todo&status=in_progress">
+                        <i class="fas fa-exclamation-triangle"></i> Overdue
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Recent Projects -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-header" data-toggle="collapse" data-target="#projects-content">
+            <h3><i class="fas fa-project-diagram"></i> My Projects</h3>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-content" id="projects-content">
+            {% if user_projects %}
+            <ul class="sidebar-nav">
+                {% for project in user_projects|slice:":5" %}
+                <li>
+                    <a href="{% url 'tasks:project_detail' project.id %}">
+                        <span class="project-dot" style="background-color: {% cycle '#3498db' '#2ecc71' '#e74c3c' '#f39c12' '#9b59b6' %}"></span>
+                        {{ project.title }}
+                        <span class="badge">{{ project.task_count }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+                {% if user_projects.count > 5 %}
+                <li class="view-all">
+                    <a href="{% url 'tasks:project_list' %}">
+                        <i class="fas fa-ellipsis-h"></i> View All Projects
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <p>No projects yet</p>
+                <a href="{% url 'tasks:project_create' %}" class="btn btn-sm btn-primary">Create Project</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Categories -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-header" data-toggle="collapse" data-target="#categories-content">
+            <h3><i class="fas fa-tags"></i> Categories</h3>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-content" id="categories-content">
+            {% with categories=category_list|default:'' %}
+            {% if categories %}
+            <ul class="sidebar-nav">
+                {% for category in categories|slice:":5" %}
+                <li>
+                    <a href="{% url 'tasks:task_list' %}?category={{ category.id }}">
+                        <span class="category-color" style="background-color: {{ category.color }}"></span>
+                        {{ category.name }}
+                    </a>
+                </li>
+                {% endfor %}
+                {% if categories.count > 5 %}
+                <li class="view-all">
+                    <a href="{% url 'tasks:category_list' %}">
+                        <i class="fas fa-ellipsis-h"></i> View All Categories
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <p>No categories yet</p>
+                <a href="{% url 'tasks:category_create' %}" class="btn btn-sm btn-primary">Create Category</a>
+            </div>
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+    
+    <!-- Theme Toggle -->
+    <div class="sidebar-footer">
+        <button class="theme-toggle" id="theme-toggle">
+            <i class="fas fa-moon dark-icon"></i>
+            <i class="fas fa-sun light-icon"></i>
+            <span id="theme-label">{% if user.theme_preference == 'dark' %}Light Mode{% else %}Dark Mode{% endif %}</span>
+        </button>
+    </div>
+</aside>
+

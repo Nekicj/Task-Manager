@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories - Task Manager{% endblock %}
+
+{% block page_title %}Categories{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'tasks:category_create' %}" class="btn btn-primary btn-with-icon">
+    <i class="fas fa-plus"></i>
+    <span>New Category</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        {% if category_hierarchy %}
+            <div class="category-list">
+                <div class="category-list-header">
+                    <div class="row">
+                        <div class="col-md-3">Category</div>
+                        <div class="col-md-5">Description</div>
+                        <div class="col-md-2">Tasks</div>
+                        <div class="col-md-2">Actions</div>
+                    </div>
+                </div>
+                
+                {% for item in category_hierarchy %}
+                    <div class="category-item">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="category-name">
+                                    <span class="category-color" style="background-color: {{ item.category.color }}"></span>
+                                    <strong>{{ item.category.name }}</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-5">{{ item.category.description|default:"--" }}</div>
+                            <div class="col-md-2">{{ item.task_count }}</div>
+                            <div class="col-md-2">
+                                <div class="action-buttons">
+                                    <a href="{% url 'tasks:category_update' item.category.id %}" class="btn btn-sm btn-outline" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'tasks:category_delete' item.category.id %}" class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if item.children %}
+                        {% for child in item.children %}
+                            <div class="category-item child-category">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="category-name">
+                                            <i class="fas fa-long-arrow-alt-right child-indicator"></i>
+                                            <span class="category-color" style="background-color: {{ child.color }}"></span>
+                                            {{ child.name }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5">{{ child.description|default:"--" }}</div>
+                                    <div class="col-md-2">{{ child.task_count }}</div>
+                                    <div class="col-md-2">
+                                        <div class="action-buttons">
+                                            <a href="{% url 'tasks:category_update' child.id %}" class="btn btn-sm btn-outline" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'tasks:category_delete' child.id %}" class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No categories yet</p>
+                <p>Categories help you organize your tasks and projects.</p>
+                <a href="{% url 'tasks:category_create' %}" class="btn btn-primary">Create Category</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .category-list {
+        margin-top: var(--spacing-4);
+    }
+    
+    .category-list-header {
+        font-weight: var(--font-weight-bold);
+        padding: var(--spacing-3) var(--spacing-4);
+        border-bottom: 1px solid var(--color-border);
+    }
+    
+    .category-item {
+        padding: var(--spacing-3) var(--spacing-4);
+        border-bottom: 1px solid var(--color-divider);
+        transition: background-color var(--transition-fast);
+    }
+    
+    .category-item:hover {
+        background-color: var(--color-background);
+    }
+    
+    .category-item:last-child {
+        border-bottom: none;
+    }
+    
+    .child-category {
+        padding-left: var(--spacing-8);
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    .dark-theme .child-category {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+    
+    .category-name {
+        display: flex;
+        align-items: center;
+    }
+    
+    .category-color {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        margin-right: var(--spacing-2);
+    }
+    
+    .child-indicator {
+        margin-right: var(--spacing-2);
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: var(--spacing-2);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: var(--spacing-6);
+        color: var(--color-text-secondary);
+    }
+    
+    .empty-state p {
+        margin-bottom: var(--spacing-4);
+    }
+</style>
+{% endblock %}
+

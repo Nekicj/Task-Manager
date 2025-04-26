@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% block title %}Projects | Task Manager{% endblock %}
+
+{% block page_title %}Projects{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'tasks:project_create' %}" class="btn btn-primary btn-with-icon">
+    <i class="fas fa-plus"></i>
+    <span>New Project</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="projects-container">
+    <!-- Filter & Search Section -->
+    <div class="filter-panel card">
+        <div class="card-header">
+            <h4 class="card-title"><i class="fas fa-filter"></i> Find Projects</h4>
+            <button class="filter-toggle">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="card-body filter-body">
+            <form method="get" action="{% url 'tasks:project_list' %}" class="filter-form">
+                <div class="row">
+                    <!-- Search -->
+                    <div class="col-md-12 form-group">
+                        <label class="form-label" for="search">Search</label>
+                        <input type="text" name="search" id="search" class="form-control" value="{{ request.GET.search|default:'' }}" placeholder="Search projects..." data-debounce="true">
+                    </div>
+                    
+                    <!-- Status Filter -->
+                    <div class="col-md-6 form-group">
+                        <label class="form-label">Status</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="archived" id="show_archived" value="true" {% if request.GET.archived %}checked{% endif %}>
+                            <label class="form-check-label" for="show_archived">
+                                Show Archived Projects
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Date Range Filter -->
+                    <div class="col-md-6 form-group">
+                        <label class="form-label">Created After</label>
+                        <input type="date" name="created_after" class="form-control" value="{{ request.GET.created_after|default:'' }}">
+                    </div>
+                    
+                    <!-- Filter Actions -->
+                    <div class="col-md-12 form-group filter-actions">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <a href="{% url 'tasks:project_list' %}" class="btn btn-outline">Clear Filters</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Projects List -->
+    <div class="projects-grid">
+        {% if projects %}
+            {% for project in projects %}
+            <div class="project-card card {% if project.is_archived %}archived{% endif %} {% if project.is_overdue %}overdue{% endif %}">
+                <div class="card-body">
+                    <div class="project-header">
+                        <h3 class="project-title">
+                            <a href="{% url 'tasks:project_detail' project.id %}">{{ project.title }}</a>
+                        </h3>
+                        <div class="project-badges">
+                            {% if project.is_archived %}
+                            <span class="badge badge-dark">Archived</span>
+                            {% endif %}
+                            {% if project.is_overdue %}
+                            <span class="badge badge-danger">Overdue</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if project.description %}
+                    <div class="project-description">
+                        {{ project.description|truncatechars:100 }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="project-progress">
+                        <div class="progress-label">
+                            <span>Progress</span>
+                            <span>{{ project.completion_percentage }}%</span>
+                        </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ project.completion_percentage }}%;">{{ project.completion_percentage }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="project-meta">
+                        <div class="project-dates">
+                            <div class="meta-item">
+                                <i class="fas fa-calendar-plus"></i>
+                                <span>Created: {{ project.created_at|date:"M d, Y" }}</span>
+                            </div>
+                            {% if project.end_date %}
+                            <div class="meta-item">
+                                <i class="fas fa-calendar-day"></i>
+                                <span>Deadline: {{ project.end_date|date:"M d, Y" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="project-stats">
+                            <div class="meta-item">
+                                <i class="fas fa-tasks"></i>
+                                <span>{{ project.task_count }} Tasks</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>{{ project.completed_task_count }} Completed</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="project-members">
+                        <div class="members-label">Members:</div>
+                        <div class="members-avatars">
+                            {% if project.owner.profile_picture %}
+                            <img src="{{ project.owner.profile_picture.url }}" alt="{{ project.owner.username }}" class="avatar-sm owner-avatar" title="{{ project.owner.username }} (Owner)">
+                            {% else %}
+                            <div class="avatar-initials avatar-sm owner-avatar" title="{{ project.owner.username }} (Owner)">{{ project.owner.username|first|upper }}</div>
+                            {% endif %}
+                            
+                            {% for member in project.members.all|slice:":5" %}
+                                {% if member.profile_picture %}
+                                <img src="{{ member.profile_picture.url }}" alt="{{ member.username }}" class="avatar-sm" title="{{ member.username }}">
+                                {% else %}
+                                <div class="avatar-initials avatar-sm" title="{{ member.username }}">{{ member.username|first|upper }}</div>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if project.members.count > 5 %}
+                            <div class="avatar-more" title="{{ project.members.count|add:"-5" }} more members">+{{ project.members.count|add:"-5" }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="project-actions">
+                        <a href="{% url 'tasks:project_detail' project.id %}" class="btn btn-sm btn-outline">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="{% url 'tasks:task_create' %}?project={{ project.id }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i> Add Task
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline dropdown-toggle">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a href="{% url 'tasks:project_update' project.id %}" class="dropdown-item">
+                                    <i class="fas fa-edit"></i> Edit Project
+                                </a>
+                                {% if project.is_archived %}
+                                <a href="#" class="dropdown-item">
+                                    <i class="fas fa-box-open"></i> Unarchive
+                                </a>
+                                {% else %}
+                                <a href="#" class="dropdown-item">
+                                    <i class="fas fa-archive"></i> Archive
+                                </a>
+                                {% endif %}
+                                <div class="dropdown-divider"></div>
+                                <a href="{% url 'tasks:project_delete' project.id %}" class="dropdown-item text-danger">
+                                    <i class="fas fa-trash"></i> Delete Project
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation" class="pagination-container">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+                <h3>No projects found</h3>
+                <p>{% if request.GET %}No projects match your current filters. Try changing your search criteria.{% else %}You don't have any projects yet. Create your first project to get started!{% endif %}</p>
+                <div class="empty-state-actions">
+                    {% if request.GET %}
+                    <a href="{% url 'tasks:project_list' %}" class="btn btn-outline">Clear Filters</a>
+                    {% endif %}
+                    <a href="{% url 'tasks:project_create' %}" class="btn btn-primary">Create Project</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
